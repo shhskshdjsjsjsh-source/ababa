@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local HttpService = game:GetService("HttpService")
+local StarterGui = game:GetService("StarterGui")
 
 local NovaLib = {
     Themes = {
@@ -97,6 +98,15 @@ function NovaLib:SetTheme(themeName)
     end
 end
 
+function NovaLib:Notification(title, text, icon, duration)
+    StarterGui:SetCore("SendNotification", {
+        Title = title or "NovaLib",
+        Text = text or "Notification",
+        Icon = icon or "rbxassetid://107361584515540",
+        Duration = duration or 5
+    })
+end
+
 function NovaLib:MakeWindow(options)
     local Title = options.Title or "Nova Hub"
     local SubTitle = options.SubTitle or ""
@@ -104,12 +114,15 @@ function NovaLib:MakeWindow(options)
     
     local Theme = NovaLib.Themes[NovaLib.CurrentTheme]
 
+    -- Startup Notification
+    NovaLib:Notification("NovaLib Executed", "Welcome to " .. Title, "rbxassetid://107361584515540", 5)
+
     -- Create ScreenGui
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "NovaLibUI"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.IgnoreGuiInset = true
-    ScreenGui.DisplayOrder = 100 -- Ensure it's on top
+    ScreenGui.DisplayOrder = 100 
     
     if pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end) then
     else
@@ -192,7 +205,6 @@ function NovaLib:MakeWindow(options)
         if isMinimized then
             savedSize = MainFrame.Size
             TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 650, 0, 50)}):Play()
-            -- Hide content
             MainFrame.SidebarArea.Visible = false
             MainFrame.ContentArea.Visible = false
         else
@@ -202,12 +214,12 @@ function NovaLib:MakeWindow(options)
         end
     end)
     
-    -- Maximize/Restore Button (Green) - For now just toggles a larger size
+    -- Maximize/Restore Button (Green)
     local isMaximized = false
     CreateControlBtn(Color3.fromRGB(39, 200, 63), "Maximize", function()
         isMaximized = not isMaximized
         if isMaximized then
-            savedSize = MainFrame.Size -- Save current size before max
+            savedSize = MainFrame.Size 
             TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 800, 0, 500)}):Play()
         else
             TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 650, 0, 400)}):Play()
@@ -276,7 +288,7 @@ function NovaLib:MakeWindow(options)
     -- Tab Scroll Frame
     local TabList = Instance.new("ScrollingFrame")
     TabList.Name = "TabList"
-    TabList.Size = UDim2.new(1, 0, 1, -90) -- Reduced height to fit profile
+    TabList.Size = UDim2.new(1, 0, 1, -90)
     TabList.Position = UDim2.new(0, 0, 0, 40)
     TabList.BackgroundTransparency = 1
     TabList.ScrollBarThickness = 2
@@ -289,7 +301,7 @@ function NovaLib:MakeWindow(options)
     TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     TabListLayout.Parent = TabList
     
-    -- Profile Area at Bottom of Sidebar
+    -- Profile Area
     local ProfileFrame = Instance.new("Frame")
     ProfileFrame.Name = "ProfileFrame"
     ProfileFrame.Size = UDim2.new(1, -20, 0, 40)
@@ -330,7 +342,7 @@ function NovaLib:MakeWindow(options)
     ProfileName.Parent = ProfileFrame
 
     local ProfileRank = Instance.new("TextLabel")
-    ProfileRank.Text = "User" -- Placeholder
+    ProfileRank.Text = "User" 
     ProfileRank.Size = UDim2.new(1, -45, 0, 15)
     ProfileRank.Position = UDim2.new(0, 40, 0, 20)
     ProfileRank.BackgroundTransparency = 1
@@ -349,7 +361,7 @@ function NovaLib:MakeWindow(options)
     ContentArea.BackgroundTransparency = 1
     ContentArea.Parent = MainFrame
     
-    -- Content Header (Current Tab Name / Search)
+    -- Content Header
     local ContentHeader = Instance.new("Frame")
     ContentHeader.Size = UDim2.new(1, 0, 0, 30)
     ContentHeader.BackgroundTransparency = 1
@@ -366,7 +378,7 @@ function NovaLib:MakeWindow(options)
     CurrentTabLabel.TextXAlignment = Enum.TextXAlignment.Left
     CurrentTabLabel.Parent = ContentHeader
     
-    -- Real Content Container
+    -- Pages Container
     local PagesContainer = Instance.new("Frame")
     PagesContainer.Size = UDim2.new(1, 0, 1, -35)
     PagesContainer.Position = UDim2.new(0, 0, 0, 35)
@@ -380,15 +392,12 @@ function NovaLib:MakeWindow(options)
     function Window:SelectTab(Tab)
         for _, t in pairs(Tabs) do
             t.Container.Visible = false
-            -- Reset Tab Button Style
             t.Button.TextLabel.TextColor3 = Theme.Placeholder
             t.Indicator.BackgroundTransparency = 1
             TweenService:Create(t.Indicator, TweenInfo.new(0.2), {Size = UDim2.new(0, 0, 0, 15)}):Play()
         end
         Tab.Container.Visible = true
         CurrentTabLabel.Text = Tab.Name
-        
-        -- Active Tab Style
         Tab.Button.TextLabel.TextColor3 = Theme.Text
         Tab.Indicator.BackgroundTransparency = 0
         TweenService:Create(Tab.Indicator, TweenInfo.new(0.2), {Size = UDim2.new(0, 3, 0, 15)}):Play()
@@ -396,7 +405,7 @@ function NovaLib:MakeWindow(options)
 
     function Window:MakeTab(options)
         local TabName = options[1] or "Tab"
-        local TabIcon = options[2] -- Optional icon
+        local TabIcon = options[2]
         
         local TabBtn = Instance.new("TextButton")
         TabBtn.Name = TabName .. "Btn"
@@ -407,7 +416,7 @@ function NovaLib:MakeWindow(options)
         
         local Indicator = Instance.new("Frame")
         Indicator.Name = "Indicator"
-        Indicator.Size = UDim2.new(0, 0, 0, 15) -- Starts invisible/small
+        Indicator.Size = UDim2.new(0, 0, 0, 15)
         Indicator.Position = UDim2.new(0, 0, 0.5, -7.5)
         Indicator.BackgroundColor3 = Theme.Accent
         Indicator.BorderSizePixel = 0
@@ -429,7 +438,6 @@ function NovaLib:MakeWindow(options)
         BtnText.TextXAlignment = Enum.TextXAlignment.Left
         BtnText.Parent = TabBtn
         
-        -- Tab Content
         local TabContainer = Instance.new("ScrollingFrame")
         TabContainer.Name = TabName .. "Container"
         TabContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -468,10 +476,8 @@ function NovaLib:MakeWindow(options)
             Window:SelectTab(TabObj)
         end
 
-        -- ELEMENTS
         function TabObj:AddSection(options)
             local Text = options[1] or "Section"
-            
             local SectionFrame = Instance.new("Frame")
             SectionFrame.Size = UDim2.new(1, 0, 0, 30)
             SectionFrame.BackgroundTransparency = 1
@@ -510,10 +516,27 @@ function NovaLib:MakeWindow(options)
             
             AddStroke(Btn, Theme.Stroke, 1, 0.5)
             
+            -- Add Gradient
+            local Gradient = Instance.new("UIGradient")
+            Gradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255,255,255)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(200,200,200))
+            }
+            Gradient.Rotation = 90
+            Gradient.Parent = Btn
+            
             Btn.MouseButton1Click:Connect(function()
                 pcall(Callback)
                 TweenService:Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = Theme.Accent}):Play()
                 wait(0.1)
+                TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.Tertiary}):Play()
+            end)
+            
+            Btn.MouseEnter:Connect(function()
+                TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60,60,60)}):Play()
+            end)
+            
+            Btn.MouseLeave:Connect(function()
                 TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.Tertiary}):Play()
             end)
         end
@@ -590,15 +613,12 @@ function NovaLib:MakeWindow(options)
             
             Button.MouseButton1Click:Connect(function()
                 Toggled = not Toggled
-                
                 TweenService:Create(Switch, TweenInfo.new(0.2), {
                     BackgroundColor3 = Toggled and Theme.Accent or Color3.fromRGB(50, 50, 50)
                 }):Play()
-                
                 TweenService:Create(Dot, TweenInfo.new(0.2), {
                     Position = Toggled and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
                 }):Play()
-                
                 pcall(Callback, Toggled)
             end)
         end
@@ -674,7 +694,6 @@ function NovaLib:MakeWindow(options)
             local function UpdateSlider(input)
                 local pos = UDim2.new(math.clamp((input.Position.X - SlideBG.AbsolutePosition.X) / SlideBG.AbsoluteSize.X, 0, 1), 0, 1, 0)
                 TweenService:Create(Fill, TweenInfo.new(0.1), {Size = pos}):Play()
-                
                 local val = math.floor(Min + ((Max - Min) * pos.X.Scale))
                 ValueLabel.Text = tostring(val)
                 pcall(Callback, val)
@@ -712,7 +731,7 @@ function NovaLib:MakeWindow(options)
             DropFrame.BackgroundTransparency = 0.2
             DropFrame.ClipsDescendants = true
             DropFrame.Parent = TabContainer
-            DropFrame.ZIndex = 5 -- Ensure Dropdown is above other elements
+            DropFrame.ZIndex = 5
             
             local DropCorner = Instance.new("UICorner")
             DropCorner.CornerRadius = UDim.new(0, 6)
@@ -812,7 +831,6 @@ function NovaLib:MakeWindow(options)
             end)
         end
         
-        -- Include other elements like TextBox, Paragraph, etc. using similar styles
         function TabObj:AddParagraph(options)
             local Title = options[1] or "Title"
             local Text = options[2] or "Text"
@@ -920,7 +938,7 @@ function NovaLib:MakeWindow(options)
             InviteFrame.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
             InviteFrame.BackgroundTransparency = 0.1
             InviteFrame.Parent = TabContainer
-            InviteFrame.ZIndex = 5 -- Fix ZIndex
+            InviteFrame.ZIndex = 5
             
             local ICorner = Instance.new("UICorner")
             ICorner.CornerRadius = UDim.new(0, 8)
@@ -982,7 +1000,7 @@ function NovaLib:MakeWindow(options)
         Overlay.Size = UDim2.new(1, 0, 1, 0)
         Overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         Overlay.BackgroundTransparency = 0.6
-        Overlay.ZIndex = 50 -- Very high ZIndex
+        Overlay.ZIndex = 50
         Overlay.Parent = MainFrame
         
         local DFrame = Instance.new("Frame")
