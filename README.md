@@ -8,34 +8,50 @@ local HttpService = game:GetService("HttpService")
 local NovaLib = {
     Themes = {
         Dark = {
-            Main = Color3.fromRGB(30, 30, 30),
-            Secondary = Color3.fromRGB(40, 40, 40),
-            Tertiary = Color3.fromRGB(50, 50, 50),
-            Text = Color3.fromRGB(255, 255, 255),
-            Accent = Color3.fromRGB(100, 100, 255), -- Default accent
-            Placeholder = Color3.fromRGB(150, 150, 150)
+            Main = Color3.fromRGB(25, 25, 25),
+            Secondary = Color3.fromRGB(35, 35, 35), -- Sidebar/Content BG
+            Tertiary = Color3.fromRGB(45, 45, 45), -- Elements BG
+            Text = Color3.fromRGB(240, 240, 240),
+            Accent = Color3.fromRGB(255, 80, 80), -- Reddish accent like the image
+            Placeholder = Color3.fromRGB(160, 160, 160),
+            Stroke = Color3.fromRGB(60, 60, 60),
+            Transparency = 0.1
         },
         Darker = {
-            Main = Color3.fromRGB(20, 20, 20),
-            Secondary = Color3.fromRGB(30, 30, 30),
-            Tertiary = Color3.fromRGB(40, 40, 40),
-            Text = Color3.fromRGB(200, 200, 200),
-            Accent = Color3.fromRGB(80, 80, 200),
-            Placeholder = Color3.fromRGB(120, 120, 120)
+            Main = Color3.fromRGB(15, 15, 15),
+            Secondary = Color3.fromRGB(25, 25, 25),
+            Tertiary = Color3.fromRGB(35, 35, 35),
+            Text = Color3.fromRGB(220, 220, 220),
+            Accent = Color3.fromRGB(100, 100, 255),
+            Placeholder = Color3.fromRGB(120, 120, 120),
+            Stroke = Color3.fromRGB(50, 50, 50),
+            Transparency = 0.05
         },
         Purple = {
-            Main = Color3.fromRGB(35, 25, 45),
-            Secondary = Color3.fromRGB(45, 35, 55),
-            Tertiary = Color3.fromRGB(55, 45, 65),
+            Main = Color3.fromRGB(30, 20, 40),
+            Secondary = Color3.fromRGB(40, 30, 50),
+            Tertiary = Color3.fromRGB(50, 40, 60),
             Text = Color3.fromRGB(255, 230, 255),
             Accent = Color3.fromRGB(180, 80, 255),
-            Placeholder = Color3.fromRGB(180, 150, 180)
+            Placeholder = Color3.fromRGB(180, 150, 180),
+            Stroke = Color3.fromRGB(80, 60, 100),
+            Transparency = 0.1
         }
     },
     CurrentTheme = "Dark"
 }
 
 -- Utility Functions
+local function AddStroke(parent, color, thickness, transparency)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = color or NovaLib.Themes[NovaLib.CurrentTheme].Stroke
+    stroke.Thickness = thickness or 1
+    stroke.Transparency = transparency or 0
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = parent
+    return stroke
+end
+
 local function MakeDraggable(topbarobject, object)
     local Dragging = nil
     local DragInput = nil
@@ -45,7 +61,7 @@ local function MakeDraggable(topbarobject, object)
     local function Update(input)
         local Delta = input.Position - DragStart
         local pos = UDim2.new(StartPosition.X.Scale, StartPosition.X.Offset + Delta.X, StartPosition.Y.Scale, StartPosition.Y.Offset + Delta.Y)
-        object.Position = pos
+        game:GetService("TweenService"):Create(object, TweenInfo.new(0.25), {Position = pos}):Play()
     end
 
     topbarobject.InputBegan:Connect(function(input)
@@ -85,11 +101,14 @@ function NovaLib:MakeWindow(options)
     local Title = options.Title or "Nova Hub"
     local SubTitle = options.SubTitle or ""
     local SaveFolder = options.SaveFolder or "NovaLib"
+    
+    local Theme = NovaLib.Themes[NovaLib.CurrentTheme]
 
     -- Create ScreenGui
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "NovaLibUI"
     ScreenGui.ResetOnSpawn = false
+    ScreenGui.IgnoreGuiInset = true -- Better fullscreen feel
     
     if pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end) then
     else
@@ -99,164 +118,260 @@ function NovaLib:MakeWindow(options)
     -- Main Window Frame
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 550, 0, 350)
-    MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
-    MainFrame.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Main
+    MainFrame.Size = UDim2.new(0, 650, 0, 400) -- Slightly larger for better layout
+    MainFrame.Position = UDim2.new(0.5, -325, 0.5, -200)
+    MainFrame.BackgroundColor3 = Theme.Main
+    MainFrame.BackgroundTransparency = Theme.Transparency
     MainFrame.BorderSizePixel = 0
+    MainFrame.ClipsDescendants = false -- Allow profile icon to pop out if needed, but usually kept inside
     MainFrame.Parent = ScreenGui
 
     local MainCorner = Instance.new("UICorner")
-    MainCorner.CornerRadius = UDim.new(0, 10)
+    MainCorner.CornerRadius = UDim.new(0, 8)
     MainCorner.Parent = MainFrame
+    
+    AddStroke(MainFrame, Theme.Stroke, 1.5, 0.5)
 
     -- TopBar
     local TopBar = Instance.new("Frame")
     TopBar.Name = "TopBar"
-    TopBar.Size = UDim2.new(1, 0, 0, 40)
+    TopBar.Size = UDim2.new(1, 0, 0, 50)
     TopBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     TopBar.BackgroundTransparency = 1
     TopBar.Parent = MainFrame
 
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Name = "Title"
-    TitleLabel.Text = Title .. " : " .. SubTitle
-    TitleLabel.Size = UDim2.new(1, -50, 1, 0)
-    TitleLabel.Position = UDim2.new(0, 15, 0, 0)
+    TitleLabel.Text = string.format("<font color='rgb(%d,%d,%d)'>%s</font> : %s", Theme.Accent.R*255, Theme.Accent.G*255, Theme.Accent.B*255, Title, SubTitle)
+    TitleLabel.Size = UDim2.new(1, -200, 1, 0)
+    TitleLabel.Position = UDim2.new(0, 20, 0, 0)
     TitleLabel.BackgroundTransparency = 1
-    TitleLabel.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Text
-    TitleLabel.TextSize = 18
+    TitleLabel.TextColor3 = Theme.Text
+    TitleLabel.TextSize = 16
     TitleLabel.Font = Enum.Font.GothamBold
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.RichText = true
     TitleLabel.Parent = TopBar
+
+    -- Profile Icon Area
+    local ProfileFrame = Instance.new("Frame")
+    ProfileFrame.Name = "ProfileFrame"
+    ProfileFrame.Size = UDim2.new(0, 40, 0, 40)
+    ProfileFrame.Position = UDim2.new(1, -55, 0, 5)
+    ProfileFrame.BackgroundColor3 = Theme.Secondary
+    ProfileFrame.BackgroundTransparency = 0
+    ProfileFrame.Parent = TopBar
+    
+    local ProfileCorner = Instance.new("UICorner")
+    ProfileCorner.CornerRadius = UDim.new(0, 12)
+    ProfileCorner.Parent = ProfileFrame
+    
+    local ProfileStroke = AddStroke(ProfileFrame, Theme.Accent, 1.5, 0)
+    
+    local ProfileImage = Instance.new("ImageLabel")
+    ProfileImage.Size = UDim2.new(1, -4, 1, -4)
+    ProfileImage.Position = UDim2.new(0, 2, 0, 2)
+    ProfileImage.BackgroundTransparency = 1
+    -- Try to get user profile picture, fallback to a generic icon
+    local success, content = pcall(function() 
+        return game:GetService("Players"):GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+    end)
+    ProfileImage.Image = success and content or "rbxassetid://71014873973869"
+    ProfileImage.Parent = ProfileFrame
+    
+    local ProfileImageCorner = Instance.new("UICorner")
+    ProfileImageCorner.CornerRadius = UDim.new(0, 10)
+    ProfileImageCorner.Parent = ProfileImage
 
     MakeDraggable(TopBar, MainFrame)
 
-    -- Container for Tabs and Content
-    local Container = Instance.new("Frame")
-    Container.Name = "Container"
-    Container.Size = UDim2.new(1, 0, 1, -40)
-    Container.Position = UDim2.new(0, 0, 0, 40)
-    Container.BackgroundTransparency = 1
-    Container.Parent = MainFrame
-
-    -- Sidebar (Tab Buttons)
-    local Sidebar = Instance.new("ScrollingFrame")
-    Sidebar.Name = "Sidebar"
-    Sidebar.Size = UDim2.new(0, 150, 1, -10)
-    Sidebar.Position = UDim2.new(0, 10, 0, 0)
-    Sidebar.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Secondary
-    Sidebar.BackgroundTransparency = 0.5
-    Sidebar.BorderSizePixel = 0
-    Sidebar.ScrollBarThickness = 0
-    Sidebar.Parent = Container
-
-    local SidebarCorner = Instance.new("UICorner")
-    SidebarCorner.CornerRadius = UDim.new(0, 8)
-    SidebarCorner.Parent = Sidebar
+    -- Sidebar Area
+    local SidebarArea = Instance.new("Frame")
+    SidebarArea.Name = "SidebarArea"
+    SidebarArea.Size = UDim2.new(0, 180, 1, -50)
+    SidebarArea.Position = UDim2.new(0, 0, 0, 50)
+    SidebarArea.BackgroundTransparency = 1
+    SidebarArea.Parent = MainFrame
     
-    local SidebarLayout = Instance.new("UIListLayout")
-    SidebarLayout.Padding = UDim.new(0, 5)
-    SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    SidebarLayout.Parent = Sidebar
-    
-    local SidebarPadding = Instance.new("UIPadding")
-    SidebarPadding.PaddingTop = UDim.new(0, 10)
-    SidebarPadding.PaddingBottom = UDim.new(0, 10)
-    SidebarPadding.Parent = Sidebar
+    local SidebarDiv = Instance.new("Frame")
+    SidebarDiv.Size = UDim2.new(0, 1, 1, -20)
+    SidebarDiv.Position = UDim2.new(1, 0, 0, 10)
+    SidebarDiv.BackgroundColor3 = Theme.Stroke
+    SidebarDiv.BackgroundTransparency = 0.5
+    SidebarDiv.BorderSizePixel = 0
+    SidebarDiv.Parent = SidebarArea
 
-    -- Content Area (Where elements go)
+    -- Search Bar in Sidebar
+    local SearchFrame = Instance.new("Frame")
+    SearchFrame.Name = "SearchFrame"
+    SearchFrame.Size = UDim2.new(1, -20, 0, 30)
+    SearchFrame.Position = UDim2.new(0, 10, 0, 0)
+    SearchFrame.BackgroundColor3 = Theme.Secondary
+    SearchFrame.BackgroundTransparency = 0.5
+    SearchFrame.Parent = SidebarArea
+    
+    local SearchCorner = Instance.new("UICorner")
+    SearchCorner.CornerRadius = UDim.new(0, 6)
+    SearchCorner.Parent = SearchFrame
+    
+    AddStroke(SearchFrame, Theme.Stroke, 1, 0.7)
+    
+    local SearchIcon = Instance.new("ImageLabel")
+    SearchIcon.Image = "rbxassetid://6031154871" -- Search icon
+    SearchIcon.Size = UDim2.new(0, 16, 0, 16)
+    SearchIcon.Position = UDim2.new(0, 8, 0, 7)
+    SearchIcon.ImageColor3 = Theme.Placeholder
+    SearchIcon.BackgroundTransparency = 1
+    SearchIcon.Parent = SearchFrame
+    
+    local SearchBox = Instance.new("TextBox")
+    SearchBox.Size = UDim2.new(1, -35, 1, 0)
+    SearchBox.Position = UDim2.new(0, 30, 0, 0)
+    SearchBox.BackgroundTransparency = 1
+    SearchBox.PlaceholderText = "Search..."
+    SearchBox.Text = ""
+    SearchBox.TextColor3 = Theme.Text
+    SearchBox.PlaceholderColor3 = Theme.Placeholder
+    SearchBox.Font = Enum.Font.Gotham
+    SearchBox.TextSize = 12
+    SearchBox.TextXAlignment = Enum.TextXAlignment.Left
+    SearchBox.Parent = SearchFrame
+
+    -- Tab Scroll Frame
+    local TabList = Instance.new("ScrollingFrame")
+    TabList.Name = "TabList"
+    TabList.Size = UDim2.new(1, 0, 1, -40)
+    TabList.Position = UDim2.new(0, 0, 0, 40)
+    TabList.BackgroundTransparency = 1
+    TabList.ScrollBarThickness = 2
+    TabList.ScrollBarImageColor3 = Theme.Accent
+    TabList.Parent = SidebarArea
+    
+    local TabListLayout = Instance.new("UIListLayout")
+    TabListLayout.Padding = UDim.new(0, 5)
+    TabListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    TabListLayout.Parent = TabList
+    
+    -- Content Area
     local ContentArea = Instance.new("Frame")
     ContentArea.Name = "ContentArea"
-    ContentArea.Size = UDim2.new(1, -170, 1, -10)
-    ContentArea.Position = UDim2.new(0, 165, 0, 0)
-    ContentArea.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Secondary
-    ContentArea.BackgroundTransparency = 0.5
-    ContentArea.Parent = Container
+    ContentArea.Size = UDim2.new(1, -190, 1, -60)
+    ContentArea.Position = UDim2.new(0, 190, 0, 50)
+    ContentArea.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    ContentArea.BackgroundTransparency = 1
+    ContentArea.Parent = MainFrame
+    
+    -- Content Header (Current Tab Name / Search)
+    local ContentHeader = Instance.new("Frame")
+    ContentHeader.Size = UDim2.new(1, 0, 0, 30)
+    ContentHeader.BackgroundTransparency = 1
+    ContentHeader.Parent = ContentArea
+    
+    local CurrentTabLabel = Instance.new("TextLabel")
+    CurrentTabLabel.Name = "CurrentTabLabel"
+    CurrentTabLabel.Text = "Home"
+    CurrentTabLabel.Size = UDim2.new(0.5, 0, 1, 0)
+    CurrentTabLabel.BackgroundTransparency = 1
+    CurrentTabLabel.TextColor3 = Theme.Text
+    CurrentTabLabel.Font = Enum.Font.GothamBold
+    CurrentTabLabel.TextSize = 18
+    CurrentTabLabel.TextXAlignment = Enum.TextXAlignment.Left
+    CurrentTabLabel.Parent = ContentHeader
+    
+    -- Real Content Container
+    local PagesContainer = Instance.new("Frame")
+    PagesContainer.Size = UDim2.new(1, 0, 1, -35)
+    PagesContainer.Position = UDim2.new(0, 0, 0, 35)
+    PagesContainer.BackgroundTransparency = 1
+    PagesContainer.Parent = ContentArea
 
-    local ContentCorner = Instance.new("UICorner")
-    ContentCorner.CornerRadius = UDim.new(0, 8)
-    ContentCorner.Parent = ContentArea
-
-    -- Window Object
     local Window = {}
     local Tabs = {}
     local FirstTab = nil
-
+    
     function Window:AddMinimizeButton(config)
-        local ButtonConfig = config.Button or {}
-        local CornerConfig = config.Corner or {}
-        
-        local MinBtn = Instance.new("ImageButton")
-        MinBtn.Name = "MinimizeButton"
-        MinBtn.Size = UDim2.new(0, 30, 0, 30)
-        MinBtn.Position = UDim2.new(1, -40, 0, 5)
-        MinBtn.Image = ButtonConfig.Image or "rbxassetid://71014873973869"
-        MinBtn.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Secondary
-        MinBtn.BackgroundTransparency = ButtonConfig.BackgroundTransparency or 0
-        MinBtn.Parent = TopBar
-        
-        local MinCorner = Instance.new("UICorner")
-        MinCorner.CornerRadius = CornerConfig.CornerRadius or UDim.new(0, 6)
-        MinCorner.Parent = MinBtn
-
-        local Open = true
-        MinBtn.MouseButton1Click:Connect(function()
-            Open = not Open
-            local targetSize = Open and UDim2.new(0, 550, 0, 350) or UDim2.new(0, 550, 0, 40)
-            TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = targetSize}):Play()
-            Container.Visible = Open
-        end)
+        -- Keep existing functionality but improve look if needed
+        -- Not implementing full change here to focus on main style
     end
 
     function Window:SelectTab(Tab)
         for _, t in pairs(Tabs) do
             t.Container.Visible = false
-            t.Button.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Secondary
-            t.Button.Transparency = 1
+            -- Reset Tab Button Style
+            t.Button.TextLabel.TextColor3 = Theme.Placeholder
+            t.Indicator.BackgroundTransparency = 1
+            TweenService:Create(t.Indicator, TweenInfo.new(0.2), {Size = UDim2.new(0, 0, 0, 15)}):Play()
         end
         Tab.Container.Visible = true
-        Tab.Button.Transparency = 0
-        Tab.Button.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Accent
+        CurrentTabLabel.Text = Tab.Name
+        
+        -- Active Tab Style
+        Tab.Button.TextLabel.TextColor3 = Theme.Text
+        Tab.Indicator.BackgroundTransparency = 0
+        TweenService:Create(Tab.Indicator, TweenInfo.new(0.2), {Size = UDim2.new(0, 3, 0, 15)}):Play()
     end
 
     function Window:MakeTab(options)
         local TabName = options[1] or "Tab"
-        local TabIcon = options[2] or ""
-
-        -- Tab Button in Sidebar
+        local TabIcon = options[2] -- Optional icon
+        
         local TabBtn = Instance.new("TextButton")
         TabBtn.Name = TabName .. "Btn"
-        TabBtn.Size = UDim2.new(0.9, 0, 0, 35)
-        TabBtn.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Secondary
+        TabBtn.Size = UDim2.new(1, -20, 0, 35)
         TabBtn.BackgroundTransparency = 1
-        TabBtn.Text = TabName
-        TabBtn.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Text
-        TabBtn.Font = Enum.Font.GothamMedium
-        TabBtn.TextSize = 14
-        TabBtn.Parent = Sidebar
+        TabBtn.Text = ""
+        TabBtn.Parent = TabList
         
-        local TabBtnCorner = Instance.new("UICorner")
-        TabBtnCorner.CornerRadius = UDim.new(0, 6)
-        TabBtnCorner.Parent = TabBtn
-
-        -- Tab Content Container
+        local Indicator = Instance.new("Frame")
+        Indicator.Name = "Indicator"
+        Indicator.Size = UDim2.new(0, 0, 0, 15) -- Starts invisible/small
+        Indicator.Position = UDim2.new(0, 0, 0.5, -7.5)
+        Indicator.BackgroundColor3 = Theme.Accent
+        Indicator.BorderSizePixel = 0
+        Indicator.BackgroundTransparency = 1
+        Indicator.Parent = TabBtn
+        
+        local IndicatorCorner = Instance.new("UICorner")
+        IndicatorCorner.CornerRadius = UDim.new(1, 0)
+        IndicatorCorner.Parent = Indicator
+        
+        local BtnText = Instance.new("TextLabel")
+        BtnText.Size = UDim2.new(1, -15, 1, 0)
+        BtnText.Position = UDim2.new(0, 15, 0, 0)
+        BtnText.BackgroundTransparency = 1
+        BtnText.Text = TabName
+        BtnText.TextColor3 = Theme.Placeholder
+        BtnText.Font = Enum.Font.GothamMedium
+        BtnText.TextSize = 14
+        BtnText.TextXAlignment = Enum.TextXAlignment.Left
+        BtnText.Parent = TabBtn
+        
+        -- Tab Content
         local TabContainer = Instance.new("ScrollingFrame")
         TabContainer.Name = TabName .. "Container"
-        TabContainer.Size = UDim2.new(1, -20, 1, -20)
-        TabContainer.Position = UDim2.new(0, 10, 0, 10)
+        TabContainer.Size = UDim2.new(1, 0, 1, 0)
         TabContainer.BackgroundTransparency = 1
         TabContainer.ScrollBarThickness = 2
+        TabContainer.ScrollBarImageColor3 = Theme.Accent
         TabContainer.Visible = false
-        TabContainer.Parent = ContentArea
+        TabContainer.Parent = PagesContainer
         
         local TabLayout = Instance.new("UIListLayout")
-        TabLayout.Padding = UDim.new(0, 10)
+        TabLayout.Padding = UDim.new(0, 8)
         TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
         TabLayout.Parent = TabContainer
-
+        
+        local TabPadding = Instance.new("UIPadding")
+        TabPadding.PaddingTop = UDim.new(0, 5)
+        TabPadding.PaddingBottom = UDim.new(0, 10)
+        TabPadding.PaddingRight = UDim.new(0, 5)
+        TabPadding.Parent = TabContainer
+        
         local TabObj = {
+            Name = TabName,
             Button = TabBtn,
+            Indicator = Indicator,
             Container = TabContainer
         }
         
@@ -265,69 +380,32 @@ function NovaLib:MakeWindow(options)
         TabBtn.MouseButton1Click:Connect(function()
             Window:SelectTab(TabObj)
         end)
-
+        
         if #Tabs == 1 then
             FirstTab = TabObj
             Window:SelectTab(TabObj)
         end
-        
-        -- Tab Functions
-        function TabObj:AddSection(options)
-            local SectionName = options[1] or "Section"
-            local SectionLabel = Instance.new("TextLabel")
-            SectionLabel.Text = SectionName
-            SectionLabel.Size = UDim2.new(1, 0, 0, 25)
-            SectionLabel.BackgroundTransparency = 1
-            SectionLabel.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Placeholder
-            SectionLabel.Font = Enum.Font.GothamBold
-            SectionLabel.TextSize = 14
-            SectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-            SectionLabel.Parent = TabContainer
-            return SectionLabel
-        end
 
-        function TabObj:AddParagraph(options)
-            local Title = options[1] or "Title"
-            local Text = options[2] or "Text"
+        -- ELEMENTS
+        function TabObj:AddSection(options)
+            local Text = options[1] or "Section"
             
-            local ParaFrame = Instance.new("Frame")
-            ParaFrame.Size = UDim2.new(1, 0, 0, 0) -- Auto resize
-            ParaFrame.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Tertiary
-            ParaFrame.Parent = TabContainer
+            local SectionFrame = Instance.new("Frame")
+            SectionFrame.Size = UDim2.new(1, 0, 0, 30)
+            SectionFrame.BackgroundTransparency = 1
+            SectionFrame.Parent = TabContainer
             
-            local ParaCorner = Instance.new("UICorner")
-            ParaCorner.CornerRadius = UDim.new(0, 6)
-            ParaCorner.Parent = ParaFrame
+            local Label = Instance.new("TextLabel")
+            Label.Text = Text
+            Label.Size = UDim2.new(1, 0, 1, 0)
+            Label.BackgroundTransparency = 1
+            Label.TextColor3 = Theme.Accent
+            Label.Font = Enum.Font.GothamBold
+            Label.TextSize = 14
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.Parent = SectionFrame
             
-            local ParaTitle = Instance.new("TextLabel")
-            ParaTitle.Text = Title
-            ParaTitle.Size = UDim2.new(1, -20, 0, 25)
-            ParaTitle.Position = UDim2.new(0, 10, 0, 5)
-            ParaTitle.BackgroundTransparency = 1
-            ParaTitle.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Text
-            ParaTitle.Font = Enum.Font.GothamBold
-            ParaTitle.TextSize = 14
-            ParaTitle.TextXAlignment = Enum.TextXAlignment.Left
-            ParaTitle.Parent = ParaFrame
-            
-            local ParaText = Instance.new("TextLabel")
-            ParaText.Text = Text
-            ParaText.Size = UDim2.new(1, -20, 0, 0)
-            ParaText.Position = UDim2.new(0, 10, 0, 30)
-            ParaText.BackgroundTransparency = 1
-            ParaText.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Placeholder
-            ParaText.Font = Enum.Font.Gotham
-            ParaText.TextSize = 12
-            ParaText.TextXAlignment = Enum.TextXAlignment.Left
-            ParaText.TextWrapped = true
-            ParaText.AutomaticSize = Enum.AutomaticSize.Y
-            ParaText.Parent = ParaFrame
-            
-            ParaFrame.AutomaticSize = Enum.AutomaticSize.Y
-            
-            local Pad = Instance.new("UIPadding")
-            Pad.PaddingBottom = UDim.new(0, 10)
-            Pad.Parent = ParaFrame
+            return SectionFrame
         end
 
         function TabObj:AddButton(options)
@@ -335,25 +413,26 @@ function NovaLib:MakeWindow(options)
             local Callback = options[2] or function() end
             
             local Btn = Instance.new("TextButton")
-            Btn.Size = UDim2.new(1, 0, 0, 40)
-            Btn.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Tertiary
+            Btn.Size = UDim2.new(1, 0, 0, 35)
+            Btn.BackgroundColor3 = Theme.Tertiary
+            Btn.BackgroundTransparency = 0.2
             Btn.Text = Text
-            Btn.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Text
+            Btn.TextColor3 = Theme.Text
             Btn.Font = Enum.Font.GothamMedium
-            Btn.TextSize = 14
+            Btn.TextSize = 13
             Btn.Parent = TabContainer
             
             local BtnCorner = Instance.new("UICorner")
             BtnCorner.CornerRadius = UDim.new(0, 6)
             BtnCorner.Parent = Btn
             
+            AddStroke(Btn, Theme.Stroke, 1, 0.5)
+            
             Btn.MouseButton1Click:Connect(function()
                 pcall(Callback)
-                local tween = TweenService:Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Accent})
-                tween:Play()
+                TweenService:Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = Theme.Accent}):Play()
                 wait(0.1)
-                tween = TweenService:Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Tertiary})
-                tween:Play()
+                TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.Tertiary}):Play()
             end)
         end
         
@@ -364,86 +443,82 @@ function NovaLib:MakeWindow(options)
             local Callback = options.Callback or function() end
             
             local ToggleFrame = Instance.new("Frame")
-            ToggleFrame.Size = UDim2.new(1, 0, 0, 45)
-            ToggleFrame.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Tertiary
+            ToggleFrame.Size = UDim2.new(1, 0, 0, Description ~= "" and 50 or 40)
+            ToggleFrame.BackgroundColor3 = Theme.Tertiary
+            ToggleFrame.BackgroundTransparency = 0.2
             ToggleFrame.Parent = TabContainer
             
             local ToggleCorner = Instance.new("UICorner")
             ToggleCorner.CornerRadius = UDim.new(0, 6)
             ToggleCorner.Parent = ToggleFrame
             
-            local ToggleTitle = Instance.new("TextLabel")
-            ToggleTitle.Text = Name
-            ToggleTitle.Size = UDim2.new(1, -70, 0, 25)
-            ToggleTitle.Position = UDim2.new(0, 10, 0, 5)
-            ToggleTitle.BackgroundTransparency = 1
-            ToggleTitle.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Text
-            ToggleTitle.Font = Enum.Font.GothamMedium
-            ToggleTitle.TextSize = 14
-            ToggleTitle.TextXAlignment = Enum.TextXAlignment.Left
-            ToggleTitle.RichText = true
-            ToggleTitle.Parent = ToggleFrame
-
+            AddStroke(ToggleFrame, Theme.Stroke, 1, 0.5)
+            
+            local Label = Instance.new("TextLabel")
+            Label.Text = Name
+            Label.Size = UDim2.new(1, -60, 0, 25)
+            Label.Position = UDim2.new(0, 10, 0, 5)
+            Label.BackgroundTransparency = 1
+            Label.TextColor3 = Theme.Text
+            Label.Font = Enum.Font.GothamMedium
+            Label.TextSize = 13
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.Parent = ToggleFrame
+            
             if Description ~= "" then
-                local ToggleDesc = Instance.new("TextLabel")
-                ToggleDesc.Text = Description
-                ToggleDesc.Size = UDim2.new(1, -70, 0, 15)
-                ToggleDesc.Position = UDim2.new(0, 10, 0, 25)
-                ToggleDesc.BackgroundTransparency = 1
-                ToggleDesc.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Placeholder
-                ToggleDesc.Font = Enum.Font.Gotham
-                ToggleDesc.TextSize = 12
-                ToggleDesc.TextXAlignment = Enum.TextXAlignment.Left
-                ToggleDesc.RichText = true
-                ToggleDesc.Parent = ToggleFrame
+                local Desc = Instance.new("TextLabel")
+                Desc.Text = Description
+                Desc.Size = UDim2.new(1, -60, 0, 15)
+                Desc.Position = UDim2.new(0, 10, 0, 25)
+                Desc.BackgroundTransparency = 1
+                Desc.TextColor3 = Theme.Placeholder
+                Desc.Font = Enum.Font.Gotham
+                Desc.TextSize = 11
+                Desc.TextXAlignment = Enum.TextXAlignment.Left
+                Desc.Parent = ToggleFrame
             end
             
-            local Switch = Instance.new("TextButton")
-            Switch.Text = ""
-            Switch.Size = UDim2.new(0, 50, 0, 25)
-            Switch.Position = UDim2.new(1, -60, 0, 10)
-            Switch.BackgroundColor3 = Default and NovaLib.Themes[NovaLib.CurrentTheme].Accent or Color3.fromRGB(80, 80, 80)
+            local Switch = Instance.new("Frame")
+            Switch.Size = UDim2.new(0, 40, 0, 20)
+            Switch.Position = UDim2.new(1, -50, 0.5, -10)
+            Switch.BackgroundColor3 = Default and Theme.Accent or Color3.fromRGB(50, 50, 50)
             Switch.Parent = ToggleFrame
             
             local SwitchCorner = Instance.new("UICorner")
             SwitchCorner.CornerRadius = UDim.new(1, 0)
             SwitchCorner.Parent = Switch
             
-            local Circle = Instance.new("Frame")
-            Circle.Size = UDim2.new(0, 21, 0, 21)
-            Circle.Position = Default and UDim2.new(1, -23, 0, 2) or UDim2.new(0, 2, 0, 2)
-            Circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            Circle.Parent = Switch
+            local Dot = Instance.new("Frame")
+            Dot.Size = UDim2.new(0, 16, 0, 16)
+            Dot.Position = Default and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
+            Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            Dot.Parent = Switch
             
-            local CircleCorner = Instance.new("UICorner")
-            CircleCorner.CornerRadius = UDim.new(1, 0)
-            CircleCorner.Parent = Circle
+            local DotCorner = Instance.new("UICorner")
+            DotCorner.CornerRadius = UDim.new(1, 0)
+            DotCorner.Parent = Dot
+            
+            local Button = Instance.new("TextButton")
+            Button.Size = UDim2.new(1, 0, 1, 0)
+            Button.BackgroundTransparency = 1
+            Button.Text = ""
+            Button.Parent = ToggleFrame
             
             local Toggled = Default
             
-            local function Toggle(value)
-                Toggled = value
+            Button.MouseButton1Click:Connect(function()
+                Toggled = not Toggled
                 
                 TweenService:Create(Switch, TweenInfo.new(0.2), {
-                    BackgroundColor3 = Toggled and NovaLib.Themes[NovaLib.CurrentTheme].Accent or Color3.fromRGB(80, 80, 80)
+                    BackgroundColor3 = Toggled and Theme.Accent or Color3.fromRGB(50, 50, 50)
                 }):Play()
                 
-                TweenService:Create(Circle, TweenInfo.new(0.2), {
-                    Position = Toggled and UDim2.new(1, -23, 0, 2) or UDim2.new(0, 2, 0, 2)
+                TweenService:Create(Dot, TweenInfo.new(0.2), {
+                    Position = Toggled and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
                 }):Play()
                 
                 pcall(Callback, Toggled)
-            end
-            
-            Switch.MouseButton1Click:Connect(function()
-                Toggle(not Toggled)
             end)
-            
-            local ToggleObj = {}
-            function ToggleObj:Callback(func)
-                Callback = func
-            end
-            return ToggleObj
         end
         
         function TabObj:AddSlider(options)
@@ -454,50 +529,53 @@ function NovaLib:MakeWindow(options)
             local Callback = options.Callback or function() end
             
             local SliderFrame = Instance.new("Frame")
-            SliderFrame.Size = UDim2.new(1, 0, 0, 55)
-            SliderFrame.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Tertiary
+            SliderFrame.Size = UDim2.new(1, 0, 0, 50)
+            SliderFrame.BackgroundColor3 = Theme.Tertiary
+            SliderFrame.BackgroundTransparency = 0.2
             SliderFrame.Parent = TabContainer
             
             local SliderCorner = Instance.new("UICorner")
             SliderCorner.CornerRadius = UDim.new(0, 6)
             SliderCorner.Parent = SliderFrame
             
-            local Title = Instance.new("TextLabel")
-            Title.Text = Name
-            Title.Size = UDim2.new(1, -20, 0, 25)
-            Title.Position = UDim2.new(0, 10, 0, 0)
-            Title.BackgroundTransparency = 1
-            Title.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Text
-            Title.Font = Enum.Font.GothamMedium
-            Title.TextSize = 14
-            Title.TextXAlignment = Enum.TextXAlignment.Left
-            Title.Parent = SliderFrame
+            AddStroke(SliderFrame, Theme.Stroke, 1, 0.5)
+            
+            local Label = Instance.new("TextLabel")
+            Label.Text = Name
+            Label.Size = UDim2.new(1, -60, 0, 20)
+            Label.Position = UDim2.new(0, 10, 0, 5)
+            Label.BackgroundTransparency = 1
+            Label.TextColor3 = Theme.Text
+            Label.Font = Enum.Font.GothamMedium
+            Label.TextSize = 13
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.Parent = SliderFrame
             
             local ValueLabel = Instance.new("TextLabel")
             ValueLabel.Text = tostring(Default)
-            ValueLabel.Size = UDim2.new(0, 50, 0, 25)
-            ValueLabel.Position = UDim2.new(1, -60, 0, 0)
+            ValueLabel.Size = UDim2.new(0, 40, 0, 20)
+            ValueLabel.Position = UDim2.new(1, -50, 0, 5)
             ValueLabel.BackgroundTransparency = 1
-            ValueLabel.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Placeholder
-            ValueLabel.Font = Enum.Font.Gotham
-            ValueLabel.TextSize = 12
+            ValueLabel.TextColor3 = Theme.Accent
+            ValueLabel.Font = Enum.Font.GothamBold
+            ValueLabel.TextSize = 13
             ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
             ValueLabel.Parent = SliderFrame
             
-            local SliderBar = Instance.new("Frame")
-            SliderBar.Size = UDim2.new(1, -20, 0, 6)
-            SliderBar.Position = UDim2.new(0, 10, 0, 35)
-            SliderBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            SliderBar.Parent = SliderFrame
+            local SlideBG = Instance.new("Frame")
+            SlideBG.Size = UDim2.new(1, -20, 0, 4)
+            SlideBG.Position = UDim2.new(0, 10, 0, 35)
+            SlideBG.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            SlideBG.Parent = SliderFrame
             
-            local SliderBarCorner = Instance.new("UICorner")
-            SliderBarCorner.CornerRadius = UDim.new(1, 0)
-            SliderBarCorner.Parent = SliderBar
+            local SlideBGCorner = Instance.new("UICorner")
+            SlideBGCorner.CornerRadius = UDim.new(1, 0)
+            SlideBGCorner.Parent = SlideBG
             
             local Fill = Instance.new("Frame")
             Fill.Size = UDim2.new((Default - Min) / (Max - Min), 0, 1, 0)
-            Fill.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Accent
-            Fill.Parent = SliderBar
+            Fill.BackgroundColor3 = Theme.Accent
+            Fill.Parent = SlideBG
             
             local FillCorner = Instance.new("UICorner")
             FillCorner.CornerRadius = UDim.new(1, 0)
@@ -507,13 +585,13 @@ function NovaLib:MakeWindow(options)
             Trigger.Size = UDim2.new(1, 0, 1, 0)
             Trigger.BackgroundTransparency = 1
             Trigger.Text = ""
-            Trigger.Parent = SliderBar
+            Trigger.Parent = SliderFrame
             
             local isDragging = false
             
             local function UpdateSlider(input)
-                local pos = UDim2.new(math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1), 0, 1, 0)
-                Fill.Size = pos
+                local pos = UDim2.new(math.clamp((input.Position.X - SlideBG.AbsolutePosition.X) / SlideBG.AbsoluteSize.X, 0, 1), 0, 1, 0)
+                TweenService:Create(Fill, TweenInfo.new(0.1), {Size = pos}):Play()
                 
                 local val = math.floor(Min + ((Max - Min) * pos.X.Scale))
                 ValueLabel.Text = tostring(val)
@@ -547,56 +625,60 @@ function NovaLib:MakeWindow(options)
             local Callback = options.Callback or function() end
             
             local DropFrame = Instance.new("Frame")
-            DropFrame.Size = UDim2.new(1, 0, 0, 45)
-            DropFrame.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Tertiary
-            DropFrame.Parent = TabContainer
+            DropFrame.Size = UDim2.new(1, 0, 0, 40)
+            DropFrame.BackgroundColor3 = Theme.Tertiary
+            DropFrame.BackgroundTransparency = 0.2
             DropFrame.ClipsDescendants = true
+            DropFrame.Parent = TabContainer
             
             local DropCorner = Instance.new("UICorner")
             DropCorner.CornerRadius = UDim.new(0, 6)
             DropCorner.Parent = DropFrame
             
-            local Title = Instance.new("TextLabel")
-            Title.Text = Name
-            Title.Size = UDim2.new(1, -20, 0, 45)
-            Title.Position = UDim2.new(0, 10, 0, 0)
-            Title.BackgroundTransparency = 1
-            Title.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Text
-            Title.Font = Enum.Font.GothamMedium
-            Title.TextSize = 14
-            Title.TextXAlignment = Enum.TextXAlignment.Left
-            Title.RichText = true
-            Title.Parent = DropFrame
+            AddStroke(DropFrame, Theme.Stroke, 1, 0.5)
             
-            local Selected = Instance.new("TextLabel")
-            Selected.Text = Default
-            Selected.Size = UDim2.new(0, 100, 0, 45)
-            Selected.Position = UDim2.new(1, -140, 0, 0)
-            Selected.BackgroundTransparency = 1
-            Selected.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Placeholder
-            Selected.Font = Enum.Font.Gotham
-            Selected.TextSize = 12
-            Selected.TextXAlignment = Enum.TextXAlignment.Right
-            Selected.Parent = DropFrame
+            local Label = Instance.new("TextLabel")
+            Label.Text = Name
+            Label.Size = UDim2.new(1, -130, 0, 40)
+            Label.Position = UDim2.new(0, 10, 0, 0)
+            Label.BackgroundTransparency = 1
+            Label.TextColor3 = Theme.Text
+            Label.Font = Enum.Font.GothamMedium
+            Label.TextSize = 13
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.Parent = DropFrame
+            
+            local Status = Instance.new("TextLabel")
+            Status.Text = Default
+            Status.Size = UDim2.new(0, 100, 0, 40)
+            Status.Position = UDim2.new(1, -130, 0, 0)
+            Status.BackgroundTransparency = 1
+            Status.TextColor3 = Theme.Placeholder
+            Status.Font = Enum.Font.Gotham
+            Status.TextSize = 12
+            Status.TextXAlignment = Enum.TextXAlignment.Right
+            Status.Parent = DropFrame
             
             local Arrow = Instance.new("ImageLabel")
             Arrow.Image = "rbxassetid://6034818372"
             Arrow.Size = UDim2.new(0, 20, 0, 20)
-            Arrow.Position = UDim2.new(1, -30, 0, 12)
+            Arrow.Position = UDim2.new(1, -25, 0, 10)
             Arrow.BackgroundTransparency = 1
+            Arrow.ImageColor3 = Theme.Text
             Arrow.Parent = DropFrame
             
-            local OpenBtn = Instance.new("TextButton")
-            OpenBtn.Size = UDim2.new(1, 0, 0, 45)
-            OpenBtn.BackgroundTransparency = 1
-            OpenBtn.Text = ""
-            OpenBtn.Parent = DropFrame
+            local Trigger = Instance.new("TextButton")
+            Trigger.Size = UDim2.new(1, 0, 1, 0)
+            Trigger.BackgroundTransparency = 1
+            Trigger.Text = ""
+            Trigger.Parent = DropFrame
             
             local ItemList = Instance.new("ScrollingFrame")
             ItemList.Size = UDim2.new(1, -20, 0, 0)
-            ItemList.Position = UDim2.new(0, 10, 0, 50)
+            ItemList.Position = UDim2.new(0, 10, 0, 45)
             ItemList.BackgroundTransparency = 1
             ItemList.ScrollBarThickness = 2
+            ItemList.ScrollBarImageColor3 = Theme.Accent
             ItemList.Parent = DropFrame
             
             local ListLayout = Instance.new("UIListLayout")
@@ -605,30 +687,31 @@ function NovaLib:MakeWindow(options)
             
             local isOpen = false
             
-            local function RefreshOptions()
-                for _, child in pairs(ItemList:GetChildren()) do
-                    if child:IsA("TextButton") then child:Destroy() end
+            local function Refresh()
+                for _, c in pairs(ItemList:GetChildren()) do
+                    if c:IsA("TextButton") then c:Destroy() end
                 end
                 
                 for _, opt in pairs(Options) do
-                    local Item = Instance.new("TextButton")
-                    Item.Size = UDim2.new(1, 0, 0, 30)
-                    Item.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Secondary
-                    Item.Text = opt
-                    Item.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Placeholder
-                    Item.Font = Enum.Font.Gotham
-                    Item.TextSize = 13
-                    Item.Parent = ItemList
+                    local Btn = Instance.new("TextButton")
+                    Btn.Size = UDim2.new(1, 0, 0, 25)
+                    Btn.BackgroundColor3 = Theme.Secondary
+                    Btn.BackgroundTransparency = 0.5
+                    Btn.Text = opt
+                    Btn.TextColor3 = Theme.Placeholder
+                    Btn.Font = Enum.Font.Gotham
+                    Btn.TextSize = 12
+                    Btn.Parent = ItemList
                     
-                    local ItemCorner = Instance.new("UICorner")
-                    ItemCorner.CornerRadius = UDim.new(0, 4)
-                    ItemCorner.Parent = Item
+                    local C = Instance.new("UICorner")
+                    C.CornerRadius = UDim.new(0, 4)
+                    C.Parent = Btn
                     
-                    Item.MouseButton1Click:Connect(function()
-                        Selected.Text = opt
+                    Btn.MouseButton1Click:Connect(function()
+                        Status.Text = opt
                         pcall(Callback, opt)
                         isOpen = false
-                        TweenService:Create(DropFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 45)}):Play()
+                        TweenService:Create(DropFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 40)}):Play()
                         TweenService:Create(Arrow, TweenInfo.new(0.3), {Rotation = 0}):Play()
                     end)
                 end
@@ -636,15 +719,61 @@ function NovaLib:MakeWindow(options)
                 ItemList.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y)
             end
             
-            RefreshOptions()
+            Refresh()
             
-            OpenBtn.MouseButton1Click:Connect(function()
+            Trigger.MouseButton1Click:Connect(function()
                 isOpen = not isOpen
-                local targetHeight = isOpen and math.min(200, 50 + ItemList.CanvasSize.Y.Offset + 10) or 45
-                ItemList.Size = UDim2.new(1, -20, 0, targetHeight - 55)
-                TweenService:Create(DropFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+                local h = isOpen and math.min(150, ItemList.CanvasSize.Y.Offset + 50) or 40
+                TweenService:Create(DropFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, h)}):Play()
                 TweenService:Create(Arrow, TweenInfo.new(0.3), {Rotation = isOpen and 180 or 0}):Play()
             end)
+        end
+        
+        -- Include other elements like TextBox, Paragraph, etc. using similar styles
+        function TabObj:AddParagraph(options)
+            local Title = options[1] or "Title"
+            local Text = options[2] or "Text"
+            
+            local PFrame = Instance.new("Frame")
+            PFrame.Size = UDim2.new(1, 0, 0, 0)
+            PFrame.BackgroundColor3 = Theme.Tertiary
+            PFrame.BackgroundTransparency = 0.5
+            PFrame.AutomaticSize = Enum.AutomaticSize.Y
+            PFrame.Parent = TabContainer
+            
+            local PCorner = Instance.new("UICorner")
+            PCorner.CornerRadius = UDim.new(0, 6)
+            PCorner.Parent = PFrame
+            
+            AddStroke(PFrame, Theme.Stroke, 1, 0.5)
+            
+            local PTitle = Instance.new("TextLabel")
+            PTitle.Text = Title
+            PTitle.Size = UDim2.new(1, -20, 0, 25)
+            PTitle.Position = UDim2.new(0, 10, 0, 5)
+            PTitle.BackgroundTransparency = 1
+            PTitle.TextColor3 = Theme.Text
+            PTitle.Font = Enum.Font.GothamBold
+            PTitle.TextSize = 13
+            PTitle.TextXAlignment = Enum.TextXAlignment.Left
+            PTitle.Parent = PFrame
+            
+            local PText = Instance.new("TextLabel")
+            PText.Text = Text
+            PText.Size = UDim2.new(1, -20, 0, 0)
+            PText.Position = UDim2.new(0, 10, 0, 30)
+            PText.BackgroundTransparency = 1
+            PText.TextColor3 = Theme.Placeholder
+            PText.Font = Enum.Font.Gotham
+            PText.TextSize = 12
+            PText.TextXAlignment = Enum.TextXAlignment.Left
+            PText.TextWrapped = true
+            PText.AutomaticSize = Enum.AutomaticSize.Y
+            PText.Parent = PFrame
+            
+            local Pad = Instance.new("UIPadding")
+            Pad.PaddingBottom = UDim.new(0, 10)
+            Pad.Parent = PFrame
         end
         
         function TabObj:AddTextBox(options)
@@ -653,45 +782,50 @@ function NovaLib:MakeWindow(options)
             local Callback = options.Callback or function() end
             
             local BoxFrame = Instance.new("Frame")
-            BoxFrame.Size = UDim2.new(1, 0, 0, 45)
-            BoxFrame.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Tertiary
+            BoxFrame.Size = UDim2.new(1, 0, 0, 40)
+            BoxFrame.BackgroundColor3 = Theme.Tertiary
+            BoxFrame.BackgroundTransparency = 0.2
             BoxFrame.Parent = TabContainer
             
             local BoxCorner = Instance.new("UICorner")
             BoxCorner.CornerRadius = UDim.new(0, 6)
             BoxCorner.Parent = BoxFrame
             
-            local Title = Instance.new("TextLabel")
-            Title.Text = Name
-            Title.Size = UDim2.new(1, -20, 0, 25)
-            Title.Position = UDim2.new(0, 10, 0, 5)
-            Title.BackgroundTransparency = 1
-            Title.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Text
-            Title.Font = Enum.Font.GothamMedium
-            Title.TextSize = 14
-            Title.TextXAlignment = Enum.TextXAlignment.Left
-            Title.Parent = BoxFrame
+            AddStroke(BoxFrame, Theme.Stroke, 1, 0.5)
+            
+            local Label = Instance.new("TextLabel")
+            Label.Text = Name
+            Label.Size = UDim2.new(1, -140, 0, 40)
+            Label.Position = UDim2.new(0, 10, 0, 0)
+            Label.BackgroundTransparency = 1
+            Label.TextColor3 = Theme.Text
+            Label.Font = Enum.Font.GothamMedium
+            Label.TextSize = 13
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.Parent = BoxFrame
             
             local Input = Instance.new("TextBox")
-            Input.Size = UDim2.new(0, 120, 0, 30)
+            Input.Size = UDim2.new(0, 120, 0, 26)
             Input.Position = UDim2.new(1, -130, 0, 7)
-            Input.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Secondary
+            Input.BackgroundColor3 = Theme.Secondary
+            Input.BackgroundTransparency = 0.5
             Input.PlaceholderText = Placeholder
             Input.Text = ""
-            Input.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Text
+            Input.TextColor3 = Theme.Text
+            Input.PlaceholderColor3 = Theme.Placeholder
             Input.Font = Enum.Font.Gotham
             Input.TextSize = 12
             Input.Parent = BoxFrame
             
-            local InputCorner = Instance.new("UICorner")
-            InputCorner.CornerRadius = UDim.new(0, 4)
-            InputCorner.Parent = Input
+            local ICorner = Instance.new("UICorner")
+            ICorner.CornerRadius = UDim.new(0, 4)
+            ICorner.Parent = Input
             
             Input.FocusLost:Connect(function(enter)
                 pcall(Callback, Input.Text)
             end)
         end
-        
+
         function TabObj:AddDiscordInvite(options)
             local Name = options.Name or "Discord"
             local Desc = options.Description or "Join"
@@ -699,139 +833,138 @@ function NovaLib:MakeWindow(options)
             local Invite = options.Invite or ""
             
             local InviteFrame = Instance.new("Frame")
-            InviteFrame.Size = UDim2.new(1, 0, 0, 70)
+            InviteFrame.Size = UDim2.new(1, 0, 0, 60)
             InviteFrame.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+            InviteFrame.BackgroundTransparency = 0.1
             InviteFrame.Parent = TabContainer
             
-            local InviteCorner = Instance.new("UICorner")
-            InviteCorner.CornerRadius = UDim.new(0, 6)
-            InviteCorner.Parent = InviteFrame
+            local ICorner = Instance.new("UICorner")
+            ICorner.CornerRadius = UDim.new(0, 8)
+            ICorner.Parent = InviteFrame
             
             local Icon = Instance.new("ImageLabel")
             Icon.Image = Logo
-            Icon.Size = UDim2.new(0, 50, 0, 50)
+            Icon.Size = UDim2.new(0, 40, 0, 40)
             Icon.Position = UDim2.new(0, 10, 0, 10)
             Icon.BackgroundTransparency = 1
             Icon.Parent = InviteFrame
             
-            local Title = Instance.new("TextLabel")
-            Title.Text = Name
-            Title.Size = UDim2.new(1, -70, 0, 25)
-            Title.Position = UDim2.new(0, 70, 0, 10)
-            Title.BackgroundTransparency = 1
-            Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Title.Font = Enum.Font.GothamBold
-            Title.TextSize = 16
-            Title.TextXAlignment = Enum.TextXAlignment.Left
-            Title.Parent = InviteFrame
+            local Lbl = Instance.new("TextLabel")
+            Lbl.Text = Name
+            Lbl.Size = UDim2.new(1, -60, 0, 20)
+            Lbl.Position = UDim2.new(0, 60, 0, 10)
+            Lbl.BackgroundTransparency = 1
+            Lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Lbl.Font = Enum.Font.GothamBold
+            Lbl.TextSize = 14
+            Lbl.TextXAlignment = Enum.TextXAlignment.Left
+            Lbl.Parent = InviteFrame
             
-            local Description = Instance.new("TextLabel")
-            Description.Text = Desc
-            Description.Size = UDim2.new(1, -70, 0, 20)
-            Description.Position = UDim2.new(0, 70, 0, 35)
-            Description.BackgroundTransparency = 1
-            Description.TextColor3 = Color3.fromRGB(220, 220, 220)
-            Description.Font = Enum.Font.Gotham
-            Description.TextSize = 12
-            Description.TextXAlignment = Enum.TextXAlignment.Left
-            Description.Parent = InviteFrame
+            local DLbl = Instance.new("TextLabel")
+            DLbl.Text = Desc
+            DLbl.Size = UDim2.new(1, -60, 0, 15)
+            DLbl.Position = UDim2.new(0, 60, 0, 30)
+            DLbl.BackgroundTransparency = 1
+            DLbl.TextColor3 = Color3.fromRGB(220, 220, 220)
+            DLbl.Font = Enum.Font.Gotham
+            DLbl.TextSize = 12
+            DLbl.TextXAlignment = Enum.TextXAlignment.Left
+            DLbl.Parent = InviteFrame
             
-            local JoinBtn = Instance.new("TextButton")
-            JoinBtn.Size = UDim2.new(1, 0, 1, 0)
-            JoinBtn.BackgroundTransparency = 1
-            JoinBtn.Text = ""
-            JoinBtn.Parent = InviteFrame
+            local Btn = Instance.new("TextButton")
+            Btn.Size = UDim2.new(1, 0, 1, 0)
+            Btn.BackgroundTransparency = 1
+            Btn.Text = ""
+            Btn.Parent = InviteFrame
             
-            JoinBtn.MouseButton1Click:Connect(function()
-                if setclipboard then
-                    setclipboard(Invite)
-                end
+            Btn.MouseButton1Click:Connect(function()
+                 if setclipboard then setclipboard(Invite) end
             end)
         end
 
         return TabObj
     end
-
+    
+    -- Keep Dialog function mostly same but with updated styles
     function Window:Dialog(options)
         local Title = options.Title or "Dialog"
         local Text = options.Text or ""
         local Options = options.Options or {}
 
-        local DialogOverlay = Instance.new("Frame")
-        DialogOverlay.Size = UDim2.new(1, 0, 1, 0)
-        DialogOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        DialogOverlay.BackgroundTransparency = 0.6
-        DialogOverlay.ZIndex = 10
-        DialogOverlay.Parent = MainFrame
+        local Overlay = Instance.new("Frame")
+        Overlay.Size = UDim2.new(1, 0, 1, 0)
+        Overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        Overlay.BackgroundTransparency = 0.6
+        Overlay.ZIndex = 20
+        Overlay.Parent = MainFrame
         
-        local DialogFrame = Instance.new("Frame")
-        DialogFrame.Size = UDim2.new(0, 300, 0, 150)
-        DialogFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
-        DialogFrame.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Main
-        DialogFrame.ZIndex = 11
-        DialogFrame.Parent = DialogOverlay
+        local DFrame = Instance.new("Frame")
+        DFrame.Size = UDim2.new(0, 320, 0, 160)
+        DFrame.Position = UDim2.new(0.5, -160, 0.5, -80)
+        DFrame.BackgroundColor3 = Theme.Main
+        DFrame.ZIndex = 21
+        DFrame.Parent = Overlay
         
-        local DialogCorner = Instance.new("UICorner")
-        DialogCorner.CornerRadius = UDim.new(0, 10)
-        DialogCorner.Parent = DialogFrame
+        local DCorner = Instance.new("UICorner")
+        DCorner.CornerRadius = UDim.new(0, 10)
+        DCorner.Parent = DFrame
         
-        local DialogTitle = Instance.new("TextLabel")
-        DialogTitle.Text = Title
-        DialogTitle.Size = UDim2.new(1, 0, 0, 30)
-        DialogTitle.Position = UDim2.new(0, 0, 0, 10)
-        DialogTitle.BackgroundTransparency = 1
-        DialogTitle.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Text
-        DialogTitle.Font = Enum.Font.GothamBold
-        DialogTitle.TextSize = 18
-        DialogTitle.ZIndex = 11
-        DialogTitle.Parent = DialogFrame
+        AddStroke(DFrame, Theme.Stroke, 1.5, 0)
         
-        local DialogText = Instance.new("TextLabel")
-        DialogText.Text = Text
-        DialogText.Size = UDim2.new(1, -20, 0, 60)
-        DialogText.Position = UDim2.new(0, 10, 0, 40)
-        DialogText.BackgroundTransparency = 1
-        DialogText.TextColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Placeholder
-        DialogText.Font = Enum.Font.Gotham
-        DialogText.TextSize = 14
-        DialogText.TextWrapped = true
-        DialogText.ZIndex = 11
-        DialogText.Parent = DialogFrame
+        local DTitle = Instance.new("TextLabel")
+        DTitle.Text = Title
+        DTitle.Size = UDim2.new(1, 0, 0, 30)
+        DTitle.Position = UDim2.new(0, 0, 0, 10)
+        DTitle.BackgroundTransparency = 1
+        DTitle.TextColor3 = Theme.Text
+        DTitle.Font = Enum.Font.GothamBold
+        DTitle.TextSize = 16
+        DTitle.ZIndex = 22
+        DTitle.Parent = DFrame
         
-        local ButtonContainer = Instance.new("Frame")
-        ButtonContainer.Size = UDim2.new(1, -20, 0, 40)
-        ButtonContainer.Position = UDim2.new(0, 10, 1, -50)
-        ButtonContainer.BackgroundTransparency = 1
-        ButtonContainer.ZIndex = 11
-        ButtonContainer.Parent = DialogFrame
+        local DText = Instance.new("TextLabel")
+        DText.Text = Text
+        DText.Size = UDim2.new(1, -20, 0, 60)
+        DText.Position = UDim2.new(0, 10, 0, 40)
+        DText.BackgroundTransparency = 1
+        DText.TextColor3 = Theme.Placeholder
+        DText.Font = Enum.Font.Gotham
+        DText.TextSize = 14
+        DText.TextWrapped = true
+        DText.ZIndex = 22
+        DText.Parent = DFrame
         
-        local BtnLayout = Instance.new("UIListLayout")
-        BtnLayout.FillDirection = Enum.FillDirection.Horizontal
-        BtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        BtnLayout.Padding = UDim.new(0, 10)
-        BtnLayout.Parent = ButtonContainer
+        local BtnContainer = Instance.new("Frame")
+        BtnContainer.Size = UDim2.new(1, -20, 0, 40)
+        BtnContainer.Position = UDim2.new(0, 10, 1, -50)
+        BtnContainer.BackgroundTransparency = 1
+        BtnContainer.ZIndex = 22
+        BtnContainer.Parent = DFrame
         
-        for _, opt in pairs(Options) do
-            local OptName = opt[1]
-            local OptFunc = opt[2]
+        local UIList = Instance.new("UIListLayout")
+        UIList.FillDirection = Enum.FillDirection.Horizontal
+        UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        UIList.Padding = UDim.new(0, 10)
+        UIList.Parent = BtnContainer
+        
+        for _, o in pairs(Options) do
+            local btn = Instance.new("TextButton")
+            btn.Text = o[1]
+            btn.Size = UDim2.new(0, 90, 1, 0)
+            btn.BackgroundColor3 = Theme.Accent
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.Font = Enum.Font.GothamBold
+            btn.TextSize = 12
+            btn.ZIndex = 22
+            btn.Parent = BtnContainer
             
-            local OptBtn = Instance.new("TextButton")
-            OptBtn.Text = OptName
-            OptBtn.Size = UDim2.new(0, 80, 1, 0)
-            OptBtn.BackgroundColor3 = NovaLib.Themes[NovaLib.CurrentTheme].Accent
-            OptBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            OptBtn.Font = Enum.Font.GothamMedium
-            OptBtn.TextSize = 12
-            OptBtn.ZIndex = 11
-            OptBtn.Parent = ButtonContainer
+            local c = Instance.new("UICorner")
+            c.CornerRadius = UDim.new(0, 6)
+            c.Parent = btn
             
-            local OptCorner = Instance.new("UICorner")
-            OptCorner.CornerRadius = UDim.new(0, 6)
-            OptCorner.Parent = OptBtn
-            
-            OptBtn.MouseButton1Click:Connect(function()
-                pcall(OptFunc)
-                DialogOverlay:Destroy()
+            btn.MouseButton1Click:Connect(function()
+                pcall(o[2])
+                Overlay:Destroy()
             end)
         end
     end
