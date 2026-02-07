@@ -4,7 +4,6 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local HttpService = game:GetService("HttpService")
-local StarterGui = game:GetService("StarterGui")
 
 local NovaLib = {
     Themes = {
@@ -98,15 +97,6 @@ function NovaLib:SetTheme(themeName)
     end
 end
 
-function NovaLib:Notification(title, text, icon, duration)
-    StarterGui:SetCore("SendNotification", {
-        Title = title or "NovaLib",
-        Text = text or "Notification",
-        Icon = icon or "rbxassetid://107361584515540",
-        Duration = duration or 5
-    })
-end
-
 function NovaLib:MakeWindow(options)
     local Title = options.Title or "Nova Hub"
     local SubTitle = options.SubTitle or ""
@@ -114,15 +104,12 @@ function NovaLib:MakeWindow(options)
     
     local Theme = NovaLib.Themes[NovaLib.CurrentTheme]
 
-    -- Startup Notification
-    NovaLib:Notification("NovaLib Executed", "Welcome to " .. Title, "rbxassetid://107361584515540", 5)
-
     -- Create ScreenGui
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "NovaLibUI"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.IgnoreGuiInset = true
-    ScreenGui.DisplayOrder = 100 
+    ScreenGui.DisplayOrder = 100 -- Ensure it's on top
     
     if pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end) then
     else
@@ -205,6 +192,7 @@ function NovaLib:MakeWindow(options)
         if isMinimized then
             savedSize = MainFrame.Size
             TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 650, 0, 50)}):Play()
+            -- Hide content
             MainFrame.SidebarArea.Visible = false
             MainFrame.ContentArea.Visible = false
         else
@@ -214,12 +202,12 @@ function NovaLib:MakeWindow(options)
         end
     end)
     
-    -- Maximize/Restore Button (Green)
+    -- Maximize/Restore Button (Green) - For now just toggles a larger size
     local isMaximized = false
     CreateControlBtn(Color3.fromRGB(39, 200, 63), "Maximize", function()
         isMaximized = not isMaximized
         if isMaximized then
-            savedSize = MainFrame.Size 
+            savedSize = MainFrame.Size -- Save current size before max
             TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 800, 0, 500)}):Play()
         else
             TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 650, 0, 400)}):Play()
@@ -288,12 +276,14 @@ function NovaLib:MakeWindow(options)
     -- Tab Scroll Frame
     local TabList = Instance.new("ScrollingFrame")
     TabList.Name = "TabList"
-    TabList.Size = UDim2.new(1, 0, 1, -90)
+    TabList.Size = UDim2.new(1, 0, 1, -90) -- Reduced height to fit profile
     TabList.Position = UDim2.new(0, 0, 0, 40)
     TabList.BackgroundTransparency = 1
     TabList.ScrollBarThickness = 2
     TabList.ScrollBarImageColor3 = Theme.Accent
     TabList.Parent = SidebarArea
+    TabList.CanvasSize = UDim2.new(0, 0, 0, 0)
+    TabList.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y
     
     local TabListLayout = Instance.new("UIListLayout")
     TabListLayout.Padding = UDim.new(0, 5)
@@ -301,7 +291,7 @@ function NovaLib:MakeWindow(options)
     TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     TabListLayout.Parent = TabList
     
-    -- Profile Area
+    -- Profile Area at Bottom of Sidebar
     local ProfileFrame = Instance.new("Frame")
     ProfileFrame.Name = "ProfileFrame"
     ProfileFrame.Size = UDim2.new(1, -20, 0, 40)
@@ -342,7 +332,7 @@ function NovaLib:MakeWindow(options)
     ProfileName.Parent = ProfileFrame
 
     local ProfileRank = Instance.new("TextLabel")
-    ProfileRank.Text = "User" 
+    ProfileRank.Text = "User" -- Placeholder
     ProfileRank.Size = UDim2.new(1, -45, 0, 15)
     ProfileRank.Position = UDim2.new(0, 40, 0, 20)
     ProfileRank.BackgroundTransparency = 1
@@ -361,7 +351,7 @@ function NovaLib:MakeWindow(options)
     ContentArea.BackgroundTransparency = 1
     ContentArea.Parent = MainFrame
     
-    -- Content Header
+    -- Content Header (Current Tab Name / Search)
     local ContentHeader = Instance.new("Frame")
     ContentHeader.Size = UDim2.new(1, 0, 0, 30)
     ContentHeader.BackgroundTransparency = 1
@@ -378,7 +368,7 @@ function NovaLib:MakeWindow(options)
     CurrentTabLabel.TextXAlignment = Enum.TextXAlignment.Left
     CurrentTabLabel.Parent = ContentHeader
     
-    -- Pages Container
+    -- Real Content Container
     local PagesContainer = Instance.new("Frame")
     PagesContainer.Size = UDim2.new(1, 0, 1, -35)
     PagesContainer.Position = UDim2.new(0, 0, 0, 35)
@@ -392,12 +382,15 @@ function NovaLib:MakeWindow(options)
     function Window:SelectTab(Tab)
         for _, t in pairs(Tabs) do
             t.Container.Visible = false
+            -- Reset Tab Button Style
             t.Button.TextLabel.TextColor3 = Theme.Placeholder
             t.Indicator.BackgroundTransparency = 1
             TweenService:Create(t.Indicator, TweenInfo.new(0.2), {Size = UDim2.new(0, 0, 0, 15)}):Play()
         end
         Tab.Container.Visible = true
         CurrentTabLabel.Text = Tab.Name
+        
+        -- Active Tab Style
         Tab.Button.TextLabel.TextColor3 = Theme.Text
         Tab.Indicator.BackgroundTransparency = 0
         TweenService:Create(Tab.Indicator, TweenInfo.new(0.2), {Size = UDim2.new(0, 3, 0, 15)}):Play()
@@ -405,7 +398,7 @@ function NovaLib:MakeWindow(options)
 
     function Window:MakeTab(options)
         local TabName = options[1] or "Tab"
-        local TabIcon = options[2]
+        local TabIcon = options[2] -- Optional icon
         
         local TabBtn = Instance.new("TextButton")
         TabBtn.Name = TabName .. "Btn"
@@ -416,7 +409,7 @@ function NovaLib:MakeWindow(options)
         
         local Indicator = Instance.new("Frame")
         Indicator.Name = "Indicator"
-        Indicator.Size = UDim2.new(0, 0, 0, 15)
+        Indicator.Size = UDim2.new(0, 0, 0, 15) -- Starts invisible/small
         Indicator.Position = UDim2.new(0, 0, 0.5, -7.5)
         Indicator.BackgroundColor3 = Theme.Accent
         Indicator.BorderSizePixel = 0
@@ -438,6 +431,7 @@ function NovaLib:MakeWindow(options)
         BtnText.TextXAlignment = Enum.TextXAlignment.Left
         BtnText.Parent = TabBtn
         
+        -- Tab Content
         local TabContainer = Instance.new("ScrollingFrame")
         TabContainer.Name = TabName .. "Container"
         TabContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -446,6 +440,8 @@ function NovaLib:MakeWindow(options)
         TabContainer.ScrollBarImageColor3 = Theme.Accent
         TabContainer.Visible = false
         TabContainer.Parent = PagesContainer
+        TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0) -- Adicionado
+        TabContainer.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y -- Adicionado
         
         local TabLayout = Instance.new("UIListLayout")
         TabLayout.Padding = UDim.new(0, 8)
@@ -476,8 +472,10 @@ function NovaLib:MakeWindow(options)
             Window:SelectTab(TabObj)
         end
 
+        -- ELEMENTS
         function TabObj:AddSection(options)
             local Text = options[1] or "Section"
+            
             local SectionFrame = Instance.new("Frame")
             SectionFrame.Size = UDim2.new(1, 0, 0, 30)
             SectionFrame.BackgroundTransparency = 1
@@ -516,27 +514,10 @@ function NovaLib:MakeWindow(options)
             
             AddStroke(Btn, Theme.Stroke, 1, 0.5)
             
-            -- Add Gradient
-            local Gradient = Instance.new("UIGradient")
-            Gradient.Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(255,255,255)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(200,200,200))
-            }
-            Gradient.Rotation = 90
-            Gradient.Parent = Btn
-            
             Btn.MouseButton1Click:Connect(function()
                 pcall(Callback)
                 TweenService:Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = Theme.Accent}):Play()
                 wait(0.1)
-                TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.Tertiary}):Play()
-            end)
-            
-            Btn.MouseEnter:Connect(function()
-                TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60,60,60)}):Play()
-            end)
-            
-            Btn.MouseLeave:Connect(function()
                 TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.Tertiary}):Play()
             end)
         end
@@ -613,12 +594,15 @@ function NovaLib:MakeWindow(options)
             
             Button.MouseButton1Click:Connect(function()
                 Toggled = not Toggled
+                
                 TweenService:Create(Switch, TweenInfo.new(0.2), {
                     BackgroundColor3 = Toggled and Theme.Accent or Color3.fromRGB(50, 50, 50)
                 }):Play()
+                
                 TweenService:Create(Dot, TweenInfo.new(0.2), {
                     Position = Toggled and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
                 }):Play()
+                
                 pcall(Callback, Toggled)
             end)
         end
@@ -694,6 +678,7 @@ function NovaLib:MakeWindow(options)
             local function UpdateSlider(input)
                 local pos = UDim2.new(math.clamp((input.Position.X - SlideBG.AbsolutePosition.X) / SlideBG.AbsoluteSize.X, 0, 1), 0, 1, 0)
                 TweenService:Create(Fill, TweenInfo.new(0.1), {Size = pos}):Play()
+                
                 local val = math.floor(Min + ((Max - Min) * pos.X.Scale))
                 ValueLabel.Text = tostring(val)
                 pcall(Callback, val)
@@ -731,7 +716,7 @@ function NovaLib:MakeWindow(options)
             DropFrame.BackgroundTransparency = 0.2
             DropFrame.ClipsDescendants = true
             DropFrame.Parent = TabContainer
-            DropFrame.ZIndex = 5
+            DropFrame.ZIndex = 5 -- Ensure Dropdown is above other elements
             
             local DropCorner = Instance.new("UICorner")
             DropCorner.CornerRadius = UDim.new(0, 6)
@@ -818,10 +803,6 @@ function NovaLib:MakeWindow(options)
                     end)
                 end
                 
-                ItemList.ChildAdded:Connect(function()
-                     ItemList.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y)
-                end)
-                task.wait()
                 ItemList.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y)
             end
             
@@ -835,6 +816,7 @@ function NovaLib:MakeWindow(options)
             end)
         end
         
+        -- Include other elements like TextBox, Paragraph, etc. using similar styles
         function TabObj:AddParagraph(options)
             local Title = options[1] or "Title"
             local Text = options[2] or "Text"
@@ -942,7 +924,7 @@ function NovaLib:MakeWindow(options)
             InviteFrame.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
             InviteFrame.BackgroundTransparency = 0.1
             InviteFrame.Parent = TabContainer
-            InviteFrame.ZIndex = 5
+            InviteFrame.ZIndex = 5 -- Fix ZIndex
             
             local ICorner = Instance.new("UICorner")
             ICorner.CornerRadius = UDim.new(0, 8)
@@ -1004,324 +986,7 @@ function NovaLib:MakeWindow(options)
         Overlay.Size = UDim2.new(1, 0, 1, 0)
         Overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         Overlay.BackgroundTransparency = 0.6
-        Overlay.ZIndex = 50
-        Overlay.Parent = MainFrame
-        
-        local DFrame = Instance.new("Frame")
-        DFrame.Size = UDim2.new(0, 320, 0, 160)
-        DFrame.Position = UDim2.new(0.5, -160, 0.5, -80)
-        DFrame.BackgroundColor3 = Theme.Main
-        DFrame.ZIndex = 51
-        DFrame.Parent = Overlay
-        
-        local DCorner = Instance.new("UICorner")
-        DCorner.CornerRadius = UDim.new(0, 10)
-        DCorner.Parent = DFrame
-        
-        AddStroke(DFrame, Theme.Stroke, 1.5, 0)
-        
-        local DTitle = Instance.new("TextLabel")
-        DTitle.Text = Title
-        DTitle.Size = UDim2.new(1, 0, 0, 30)
-        DTitle.Position = UDim2.new(0, 0, 0, 10)
-        DTitle.BackgroundTransparency = 1
-        DTitle.TextColor3 = Theme.Text
-        DTitle.Font = Enum.Font.GothamBold
-        DTitle.TextSize = 16
-        DTitle.ZIndex = 52
-        DTitle.Parent = DFrame
-        
-        local DText = Instance.new("TextLabel")
-        DText.Text = Text
-        DText.Size = UDim2.new(1, -20, 0, 60)
-        DText.Position = UDim2.new(0, 10, 0, 40)
-        DText.BackgroundTransparency = 1
-        DText.TextColor3 = Theme.Placeholder
-        DText.Font = Enum.Font.Gotham
-        DText.TextSize = 14
-        DText.TextWrapped = true
-        DText.ZIndex = 52
-        DText.Parent = DFrame
-        
-        local BtnContainer = Instance.new("Frame")
-        BtnContainer.Size = UDim2.new(1, -20, 0, 40)
-        BtnContainer.Position = UDim2.new(0, 10, 1, -50)
-        BtnContainer.BackgroundTransparency = 1
-        BtnContainer.ZIndex = 52
-        BtnContainer.Parent = DFrame
-        
-        local UIList = Instance.new("UIListLayout")
-        UIList.FillDirection = Enum.FillDirection.Horizontal
-        UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        UIList.Padding = UDim.new(0, 10)
-        UIList.Parent = BtnContainer
-        
-        for _, o in pairs(Options) do
-            local btn = Instance.new("TextButton")
-            btn.Text = o[1]
-            btn.Size = UDim2.new(0, 90, 1, 0)
-            btn.BackgroundColor3 = Theme.Accent
-            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            btn.Font = Enum.Font.GothamBold
-            btn.TextSize = 12
-            btn.ZIndex = 53
-            btn.Parent = BtnContainer
-            
-            local c = Instance.new("UICorner")
-            c.CornerRadius = UDim.new(0, 6)
-            c.Parent = btn
-            
-            btn.MouseButton1Click:Connect(function()
-                pcall(o[2])
-                Overlay:Destroy()
-            end)
-        end
-    end
-
-    function Window:MakeDiscordTab(options)
-        local Name = options.Name or "Discord"
-        local ServerName = options.ServerName or "Server"
-        local Invite = options.Invite or ""
-        local Channels = options.Channels or {}
-        local IconId = options.Icon or "rbxassetid://107361584515540"
-
-        -- Standard Tab Creation
-        local TabBtn = Instance.new("TextButton")
-        TabBtn.Name = Name .. "Btn"
-        TabBtn.Size = UDim2.new(1, -20, 0, 35)
-        TabBtn.BackgroundTransparency = 1
-        TabBtn.Text = ""
-        TabBtn.Parent = TabList
-        
-        local Indicator = Instance.new("Frame")
-        Indicator.Name = "Indicator"
-        Indicator.Size = UDim2.new(0, 0, 0, 15)
-        Indicator.Position = UDim2.new(0, 0, 0.5, -7.5)
-        Indicator.BackgroundColor3 = Color3.fromRGB(88, 101, 242) -- Discord Blurple
-        Indicator.BorderSizePixel = 0
-        Indicator.BackgroundTransparency = 1
-        Indicator.Parent = TabBtn
-        
-        local IndicatorCorner = Instance.new("UICorner")
-        IndicatorCorner.CornerRadius = UDim.new(1, 0)
-        IndicatorCorner.Parent = Indicator
-        
-        local BtnText = Instance.new("TextLabel")
-        BtnText.Size = UDim2.new(1, -15, 1, 0)
-        BtnText.Position = UDim2.new(0, 15, 0, 0)
-        BtnText.BackgroundTransparency = 1
-        BtnText.Text = Name
-        BtnText.TextColor3 = Theme.Placeholder
-        BtnText.Font = Enum.Font.GothamMedium
-        BtnText.TextSize = 14
-        BtnText.TextXAlignment = Enum.TextXAlignment.Left
-        BtnText.Parent = TabBtn
-
-        local TabContainer = Instance.new("Frame") -- Not ScrollingFrame for Discord layout
-        TabContainer.Name = Name .. "Container"
-        TabContainer.Size = UDim2.new(1, 0, 1, 0)
-        TabContainer.BackgroundTransparency = 1
-        TabContainer.Visible = false
-        TabContainer.Parent = PagesContainer
-
-        local TabObj = {
-            Name = Name,
-            Button = TabBtn,
-            Indicator = Indicator,
-            Container = TabContainer
-        }
-        
-        table.insert(Tabs, TabObj)
-        
-        TabBtn.MouseButton1Click:Connect(function()
-            Window:SelectTab(TabObj)
-        end)
-
-        -- Discord UI Layout
-        -- Left Sidebar (Channels)
-        local ChannelList = Instance.new("ScrollingFrame")
-        ChannelList.Size = UDim2.new(0, 150, 1, 0)
-        ChannelList.BackgroundColor3 = Color3.fromRGB(47, 49, 54)
-        ChannelList.BorderSizePixel = 0
-        ChannelList.ScrollBarThickness = 2
-        ChannelList.ScrollBarImageColor3 = Color3.fromRGB(32, 34, 37)
-        ChannelList.Parent = TabContainer
-
-        local ChannelLayout = Instance.new("UIListLayout")
-        ChannelLayout.Padding = UDim.new(0, 2)
-        ChannelLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        ChannelLayout.Parent = ChannelList
-
-        local ChannelPad = Instance.new("UIPadding")
-        ChannelPad.PaddingLeft = UDim.new(0, 10)
-        ChannelPad.PaddingTop = UDim.new(0, 10)
-        ChannelPad.Parent = ChannelList
-
-        -- Server Header
-        local ServerHeader = Instance.new("TextLabel")
-        ServerHeader.Text = ServerName
-        ServerHeader.Size = UDim2.new(1, -10, 0, 30)
-        ServerHeader.BackgroundTransparency = 1
-        ServerHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
-        ServerHeader.Font = Enum.Font.GothamBold
-        ServerHeader.TextSize = 14
-        ServerHeader.TextXAlignment = Enum.TextXAlignment.Left
-        ServerHeader.Parent = ChannelList
-
-        for _, chan in pairs(Channels) do
-            local CLabel = Instance.new("TextLabel")
-            CLabel.Text = chan
-            CLabel.Size = UDim2.new(1, -10, 0, 20)
-            CLabel.BackgroundTransparency = 1
-            CLabel.TextColor3 = Color3.fromRGB(142, 146, 151)
-            CLabel.Font = Enum.Font.Gotham
-            CLabel.TextSize = 13
-            CLabel.TextXAlignment = Enum.TextXAlignment.Left
-            CLabel.Parent = ChannelList
-        end
-
-        -- Right Content (Chat)
-        local ChatArea = Instance.new("Frame")
-        ChatArea.Size = UDim2.new(1, -150, 1, 0)
-        ChatArea.Position = UDim2.new(0, 150, 0, 0)
-        ChatArea.BackgroundColor3 = Color3.fromRGB(54, 57, 63)
-        ChatArea.BorderSizePixel = 0
-        ChatArea.ClipsDescendants = true
-        ChatArea.Parent = TabContainer
-
-        -- Fake Messages (Blurred/Redacted look)
-        local MsgList = Instance.new("ScrollingFrame")
-        MsgList.Size = UDim2.new(1, 0, 1, 0)
-        MsgList.BackgroundTransparency = 1
-        MsgList.ScrollBarThickness = 4
-        MsgList.Parent = ChatArea
-
-        local MsgLayout = Instance.new("UIListLayout")
-        MsgLayout.Padding = UDim.new(0, 10)
-        MsgLayout.Parent = MsgList
-        
-        local MsgPad = Instance.new("UIPadding")
-        MsgPad.PaddingLeft = UDim.new(0, 15)
-        MsgPad.PaddingTop = UDim.new(0, 15)
-        MsgPad.Parent = MsgList
-
-        for i = 1, 10 do
-            local MsgFrame = Instance.new("Frame")
-            MsgFrame.Size = UDim2.new(1, -20, 0, 40)
-            MsgFrame.BackgroundTransparency = 1
-            MsgFrame.Parent = MsgList
-
-            local Avatar = Instance.new("Frame")
-            Avatar.Size = UDim2.new(0, 35, 0, 35)
-            Avatar.BackgroundColor3 = Color3.fromRGB(114, 118, 125)
-            Avatar.Parent = MsgFrame
-            local AvCorner = Instance.new("UICorner")
-            AvCorner.CornerRadius = UDim.new(1, 0)
-            AvCorner.Parent = Avatar
-
-            local FakeName = Instance.new("Frame")
-            FakeName.Size = UDim2.new(0, 80, 0, 10)
-            FakeName.Position = UDim2.new(0, 45, 0, 0)
-            FakeName.BackgroundColor3 = Color3.fromRGB(114, 118, 125)
-            FakeName.Parent = MsgFrame
-            local FnCorner = Instance.new("UICorner")
-            FnCorner.CornerRadius = UDim.new(0, 2)
-            FnCorner.Parent = FakeName
-
-            local FakeText = Instance.new("Frame")
-            FakeText.Size = UDim2.new(0, 200 + math.random(-50, 100), 0, 8)
-            FakeText.Position = UDim2.new(0, 45, 0, 15)
-            FakeText.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-            FakeText.Parent = MsgFrame
-            local FtCorner = Instance.new("UICorner")
-            FtCorner.CornerRadius = UDim.new(0, 2)
-            FtCorner.Parent = FakeText
-            
-            local FakeText2 = Instance.new("Frame")
-            FakeText2.Size = UDim2.new(0, 150 + math.random(-50, 50), 0, 8)
-            FakeText2.Position = UDim2.new(0, 45, 0, 27)
-            FakeText2.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-            FakeText2.Parent = MsgFrame
-            local FtCorner2 = Instance.new("UICorner")
-            FtCorner2.CornerRadius = UDim.new(0, 2)
-            FtCorner2.Parent = FakeText2
-        end
-
-        -- Blur/Lock Overlay
-        local LockOverlay = Instance.new("Frame")
-        LockOverlay.Size = UDim2.new(1, 0, 1, 0)
-        LockOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        LockOverlay.BackgroundTransparency = 0.4
-        LockOverlay.Parent = ChatArea
-
-        local JoinFrame = Instance.new("Frame")
-        JoinFrame.Size = UDim2.new(0, 280, 0, 180)
-        JoinFrame.Position = UDim2.new(0.5, -140, 0.5, -90)
-        JoinFrame.BackgroundColor3 = Color3.fromRGB(47, 49, 54)
-        JoinFrame.Parent = LockOverlay
-        
-        local JCorner = Instance.new("UICorner")
-        JCorner.CornerRadius = UDim.new(0, 8)
-        JCorner.Parent = JoinFrame
-
-        local JStroke = Instance.new("UIStroke")
-        JStroke.Color = Color3.fromRGB(88, 101, 242)
-        JStroke.Thickness = 1.5
-        JStroke.Parent = JoinFrame
-        
-        local JIcon = Instance.new("ImageLabel")
-        JIcon.Image = IconId
-        JIcon.Size = UDim2.new(0, 60, 0, 60)
-        JIcon.Position = UDim2.new(0.5, -30, 0, 15)
-        JIcon.BackgroundTransparency = 1
-        JIcon.Parent = JoinFrame
-        local JICorner = Instance.new("UICorner")
-        JICorner.CornerRadius = UDim.new(1, 0)
-        JICorner.Parent = JIcon
-
-        local JText = Instance.new("TextLabel")
-        JText.Text = "To access the messages go to this dc:"
-        JText.Size = UDim2.new(1, -20, 0, 20)
-        JText.Position = UDim2.new(0, 10, 0, 85)
-        JText.BackgroundTransparency = 1
-        JText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        JText.Font = Enum.Font.GothamBold
-        JText.TextSize = 13
-        JText.Parent = JoinFrame
-        
-        local LinkBtn = Instance.new("TextButton")
-        LinkBtn.Text = Invite
-        LinkBtn.Size = UDim2.new(1, -40, 0, 30)
-        LinkBtn.Position = UDim2.new(0, 20, 0, 115)
-        LinkBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-        LinkBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        LinkBtn.Font = Enum.Font.GothamBold
-        LinkBtn.TextSize = 12
-        LinkBtn.Parent = JoinFrame
-        local LBCorner = Instance.new("UICorner")
-        LBCorner.CornerRadius = UDim.new(0, 4)
-        LBCorner.Parent = LinkBtn
-        
-        LinkBtn.MouseButton1Click:Connect(function()
-             if setclipboard then 
-                setclipboard(Invite) 
-                LinkBtn.Text = "Copied to Clipboard!"
-                wait(2)
-                LinkBtn.Text = Invite
-             end
-        end)
-    end
-
-    function Window:Dialog(options)
-        local Title = options.Title or "Dialog"
-        local Text = options.Text or ""
-        local Options = options.Options or {}
-
-        local Overlay = Instance.new("Frame")
-        Overlay.Size = UDim2.new(1, 0, 1, 0)
-        Overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        Overlay.BackgroundTransparency = 0.6
-        Overlay.ZIndex = 50
+        Overlay.ZIndex = 50 -- Very high ZIndex
         Overlay.Parent = MainFrame
         
         local DFrame = Instance.new("Frame")
