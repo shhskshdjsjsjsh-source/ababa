@@ -108,7 +108,8 @@ function NovaLib:MakeWindow(options)
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "NovaLibUI"
     ScreenGui.ResetOnSpawn = false
-    ScreenGui.IgnoreGuiInset = true -- Better fullscreen feel
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.DisplayOrder = 100 -- Ensure it's on top
     
     if pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end) then
     else
@@ -118,12 +119,12 @@ function NovaLib:MakeWindow(options)
     -- Main Window Frame
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 650, 0, 400) -- Slightly larger for better layout
+    MainFrame.Size = UDim2.new(0, 650, 0, 400)
     MainFrame.Position = UDim2.new(0.5, -325, 0.5, -200)
     MainFrame.BackgroundColor3 = Theme.Main
     MainFrame.BackgroundTransparency = Theme.Transparency
     MainFrame.BorderSizePixel = 0
-    MainFrame.ClipsDescendants = false -- Allow profile icon to pop out if needed, but usually kept inside
+    MainFrame.ClipsDescendants = false
     MainFrame.Parent = ScreenGui
 
     local MainCorner = Instance.new("UICorner")
@@ -153,35 +154,70 @@ function NovaLib:MakeWindow(options)
     TitleLabel.RichText = true
     TitleLabel.Parent = TopBar
 
-    -- Profile Icon Area
-    local ProfileFrame = Instance.new("Frame")
-    ProfileFrame.Name = "ProfileFrame"
-    ProfileFrame.Size = UDim2.new(0, 40, 0, 40)
-    ProfileFrame.Position = UDim2.new(1, -55, 0, 5)
-    ProfileFrame.BackgroundColor3 = Theme.Secondary
-    ProfileFrame.BackgroundTransparency = 0
-    ProfileFrame.Parent = TopBar
+    -- Window Controls (MacOS style)
+    local Controls = Instance.new("Frame")
+    Controls.Name = "Controls"
+    Controls.Size = UDim2.new(0, 60, 0, 20)
+    Controls.Position = UDim2.new(1, -70, 0, 15)
+    Controls.BackgroundTransparency = 1
+    Controls.Parent = TopBar
     
-    local ProfileCorner = Instance.new("UICorner")
-    ProfileCorner.CornerRadius = UDim.new(0, 12)
-    ProfileCorner.Parent = ProfileFrame
+    local ListLayout = Instance.new("UIListLayout")
+    ListLayout.FillDirection = Enum.FillDirection.Horizontal
+    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ListLayout.Padding = UDim.new(0, 8)
+    ListLayout.Parent = Controls
     
-    local ProfileStroke = AddStroke(ProfileFrame, Theme.Accent, 1.5, 0)
+    local function CreateControlBtn(color, name, callback)
+        local Btn = Instance.new("TextButton")
+        Btn.Name = name
+        Btn.Size = UDim2.new(0, 14, 0, 14)
+        Btn.BackgroundColor3 = color
+        Btn.Text = ""
+        Btn.Parent = Controls
+        
+        local Corner = Instance.new("UICorner")
+        Corner.CornerRadius = UDim.new(1, 0)
+        Corner.Parent = Btn
+        
+        Btn.MouseButton1Click:Connect(callback)
+        return Btn
+    end
     
-    local ProfileImage = Instance.new("ImageLabel")
-    ProfileImage.Size = UDim2.new(1, -4, 1, -4)
-    ProfileImage.Position = UDim2.new(0, 2, 0, 2)
-    ProfileImage.BackgroundTransparency = 1
-    -- Try to get user profile picture, fallback to a generic icon
-    local success, content = pcall(function() 
-        return game:GetService("Players"):GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+    -- Minimize Button (Yellow)
+    local isMinimized = false
+    local savedSize = MainFrame.Size
+    CreateControlBtn(Color3.fromRGB(255, 189, 46), "Minimize", function()
+        isMinimized = not isMinimized
+        if isMinimized then
+            savedSize = MainFrame.Size
+            TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 650, 0, 50)}):Play()
+            -- Hide content
+            MainFrame.SidebarArea.Visible = false
+            MainFrame.ContentArea.Visible = false
+        else
+            TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = savedSize}):Play()
+            MainFrame.SidebarArea.Visible = true
+            MainFrame.ContentArea.Visible = true
+        end
     end)
-    ProfileImage.Image = success and content or "rbxassetid://71014873973869"
-    ProfileImage.Parent = ProfileFrame
     
-    local ProfileImageCorner = Instance.new("UICorner")
-    ProfileImageCorner.CornerRadius = UDim.new(0, 10)
-    ProfileImageCorner.Parent = ProfileImage
+    -- Maximize/Restore Button (Green) - For now just toggles a larger size
+    local isMaximized = false
+    CreateControlBtn(Color3.fromRGB(39, 200, 63), "Maximize", function()
+        isMaximized = not isMaximized
+        if isMaximized then
+            savedSize = MainFrame.Size -- Save current size before max
+            TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 800, 0, 500)}):Play()
+        else
+            TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 650, 0, 400)}):Play()
+        end
+    end)
+    
+    -- Close Button (Red)
+    CreateControlBtn(Color3.fromRGB(254, 94, 86), "Close", function()
+        ScreenGui:Destroy()
+    end)
 
     MakeDraggable(TopBar, MainFrame)
 
@@ -217,7 +253,7 @@ function NovaLib:MakeWindow(options)
     AddStroke(SearchFrame, Theme.Stroke, 1, 0.7)
     
     local SearchIcon = Instance.new("ImageLabel")
-    SearchIcon.Image = "rbxassetid://6031154871" -- Search icon
+    SearchIcon.Image = "rbxassetid://6031154871"
     SearchIcon.Size = UDim2.new(0, 16, 0, 16)
     SearchIcon.Position = UDim2.new(0, 8, 0, 7)
     SearchIcon.ImageColor3 = Theme.Placeholder
@@ -240,7 +276,7 @@ function NovaLib:MakeWindow(options)
     -- Tab Scroll Frame
     local TabList = Instance.new("ScrollingFrame")
     TabList.Name = "TabList"
-    TabList.Size = UDim2.new(1, 0, 1, -40)
+    TabList.Size = UDim2.new(1, 0, 1, -90) -- Reduced height to fit profile
     TabList.Position = UDim2.new(0, 0, 0, 40)
     TabList.BackgroundTransparency = 1
     TabList.ScrollBarThickness = 2
@@ -253,6 +289,57 @@ function NovaLib:MakeWindow(options)
     TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     TabListLayout.Parent = TabList
     
+    -- Profile Area at Bottom of Sidebar
+    local ProfileFrame = Instance.new("Frame")
+    ProfileFrame.Name = "ProfileFrame"
+    ProfileFrame.Size = UDim2.new(1, -20, 0, 40)
+    ProfileFrame.Position = UDim2.new(0, 10, 1, -45)
+    ProfileFrame.BackgroundColor3 = Theme.Secondary
+    ProfileFrame.BackgroundTransparency = 0.5
+    ProfileFrame.Parent = SidebarArea
+    
+    local ProfileCorner = Instance.new("UICorner")
+    ProfileCorner.CornerRadius = UDim.new(0, 8)
+    ProfileCorner.Parent = ProfileFrame
+    
+    AddStroke(ProfileFrame, Theme.Stroke, 1, 0.5)
+    
+    local ProfileImage = Instance.new("ImageLabel")
+    ProfileImage.Size = UDim2.new(0, 30, 0, 30)
+    ProfileImage.Position = UDim2.new(0, 5, 0, 5)
+    ProfileImage.BackgroundTransparency = 1
+    local success, content = pcall(function() 
+        return game:GetService("Players"):GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+    end)
+    ProfileImage.Image = success and content or "rbxassetid://71014873973869"
+    ProfileImage.Parent = ProfileFrame
+    
+    local PImageCorner = Instance.new("UICorner")
+    PImageCorner.CornerRadius = UDim.new(1, 0)
+    PImageCorner.Parent = ProfileImage
+    
+    local ProfileName = Instance.new("TextLabel")
+    ProfileName.Text = LocalPlayer.Name
+    ProfileName.Size = UDim2.new(1, -45, 0, 20)
+    ProfileName.Position = UDim2.new(0, 40, 0, 2)
+    ProfileName.BackgroundTransparency = 1
+    ProfileName.TextColor3 = Theme.Text
+    ProfileName.Font = Enum.Font.GothamBold
+    ProfileName.TextSize = 12
+    ProfileName.TextXAlignment = Enum.TextXAlignment.Left
+    ProfileName.Parent = ProfileFrame
+
+    local ProfileRank = Instance.new("TextLabel")
+    ProfileRank.Text = "User" -- Placeholder
+    ProfileRank.Size = UDim2.new(1, -45, 0, 15)
+    ProfileRank.Position = UDim2.new(0, 40, 0, 20)
+    ProfileRank.BackgroundTransparency = 1
+    ProfileRank.TextColor3 = Theme.Placeholder
+    ProfileRank.Font = Enum.Font.Gotham
+    ProfileRank.TextSize = 10
+    ProfileRank.TextXAlignment = Enum.TextXAlignment.Left
+    ProfileRank.Parent = ProfileFrame
+
     -- Content Area
     local ContentArea = Instance.new("Frame")
     ContentArea.Name = "ContentArea"
@@ -290,11 +377,6 @@ function NovaLib:MakeWindow(options)
     local Tabs = {}
     local FirstTab = nil
     
-    function Window:AddMinimizeButton(config)
-        -- Keep existing functionality but improve look if needed
-        -- Not implementing full change here to focus on main style
-    end
-
     function Window:SelectTab(Tab)
         for _, t in pairs(Tabs) do
             t.Container.Visible = false
@@ -630,6 +712,7 @@ function NovaLib:MakeWindow(options)
             DropFrame.BackgroundTransparency = 0.2
             DropFrame.ClipsDescendants = true
             DropFrame.Parent = TabContainer
+            DropFrame.ZIndex = 5 -- Ensure Dropdown is above other elements
             
             local DropCorner = Instance.new("UICorner")
             DropCorner.CornerRadius = UDim.new(0, 6)
@@ -837,6 +920,7 @@ function NovaLib:MakeWindow(options)
             InviteFrame.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
             InviteFrame.BackgroundTransparency = 0.1
             InviteFrame.Parent = TabContainer
+            InviteFrame.ZIndex = 5 -- Fix ZIndex
             
             local ICorner = Instance.new("UICorner")
             ICorner.CornerRadius = UDim.new(0, 8)
@@ -848,6 +932,7 @@ function NovaLib:MakeWindow(options)
             Icon.Position = UDim2.new(0, 10, 0, 10)
             Icon.BackgroundTransparency = 1
             Icon.Parent = InviteFrame
+            Icon.ZIndex = 5
             
             local Lbl = Instance.new("TextLabel")
             Lbl.Text = Name
@@ -859,6 +944,7 @@ function NovaLib:MakeWindow(options)
             Lbl.TextSize = 14
             Lbl.TextXAlignment = Enum.TextXAlignment.Left
             Lbl.Parent = InviteFrame
+            Lbl.ZIndex = 5
             
             local DLbl = Instance.new("TextLabel")
             DLbl.Text = Desc
@@ -870,12 +956,14 @@ function NovaLib:MakeWindow(options)
             DLbl.TextSize = 12
             DLbl.TextXAlignment = Enum.TextXAlignment.Left
             DLbl.Parent = InviteFrame
+            DLbl.ZIndex = 5
             
             local Btn = Instance.new("TextButton")
             Btn.Size = UDim2.new(1, 0, 1, 0)
             Btn.BackgroundTransparency = 1
             Btn.Text = ""
             Btn.Parent = InviteFrame
+            Btn.ZIndex = 5
             
             Btn.MouseButton1Click:Connect(function()
                  if setclipboard then setclipboard(Invite) end
@@ -885,7 +973,6 @@ function NovaLib:MakeWindow(options)
         return TabObj
     end
     
-    -- Keep Dialog function mostly same but with updated styles
     function Window:Dialog(options)
         local Title = options.Title or "Dialog"
         local Text = options.Text or ""
@@ -895,14 +982,14 @@ function NovaLib:MakeWindow(options)
         Overlay.Size = UDim2.new(1, 0, 1, 0)
         Overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         Overlay.BackgroundTransparency = 0.6
-        Overlay.ZIndex = 20
+        Overlay.ZIndex = 50 -- Very high ZIndex
         Overlay.Parent = MainFrame
         
         local DFrame = Instance.new("Frame")
         DFrame.Size = UDim2.new(0, 320, 0, 160)
         DFrame.Position = UDim2.new(0.5, -160, 0.5, -80)
         DFrame.BackgroundColor3 = Theme.Main
-        DFrame.ZIndex = 21
+        DFrame.ZIndex = 51
         DFrame.Parent = Overlay
         
         local DCorner = Instance.new("UICorner")
@@ -919,7 +1006,7 @@ function NovaLib:MakeWindow(options)
         DTitle.TextColor3 = Theme.Text
         DTitle.Font = Enum.Font.GothamBold
         DTitle.TextSize = 16
-        DTitle.ZIndex = 22
+        DTitle.ZIndex = 52
         DTitle.Parent = DFrame
         
         local DText = Instance.new("TextLabel")
@@ -931,14 +1018,14 @@ function NovaLib:MakeWindow(options)
         DText.Font = Enum.Font.Gotham
         DText.TextSize = 14
         DText.TextWrapped = true
-        DText.ZIndex = 22
+        DText.ZIndex = 52
         DText.Parent = DFrame
         
         local BtnContainer = Instance.new("Frame")
         BtnContainer.Size = UDim2.new(1, -20, 0, 40)
         BtnContainer.Position = UDim2.new(0, 10, 1, -50)
         BtnContainer.BackgroundTransparency = 1
-        BtnContainer.ZIndex = 22
+        BtnContainer.ZIndex = 52
         BtnContainer.Parent = DFrame
         
         local UIList = Instance.new("UIListLayout")
@@ -955,7 +1042,7 @@ function NovaLib:MakeWindow(options)
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
             btn.Font = Enum.Font.GothamBold
             btn.TextSize = 12
-            btn.ZIndex = 22
+            btn.ZIndex = 53
             btn.Parent = BtnContainer
             
             local c = Instance.new("UICorner")
